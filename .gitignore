@@ -1,0 +1,6 @@
+.venv
+.idea
+server/__pycache__/
+server/logs/
+server/.env
+server/firebase_credentials.json
