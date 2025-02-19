@@ -1,4 +1,4 @@
-import React, {ReactElement} from 'react';
+import React, {ReactElement, useMemo} from 'react';
 import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card';
 import {LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer} from 'recharts';
 import {
@@ -13,9 +13,43 @@ import {
 } from 'lucide-react';
 import {useAuth} from '@/contexts/AuthContext';
 import {formatDistance} from 'date-fns';
+import {AdminDashboard, CustomerDashboard, StaffDashboard} from "@/hooks/auth";
+
+function isAdminDashboard(dashboard: unknown): dashboard is AdminDashboard {
+    if (!dashboard || typeof dashboard !== 'object') {
+        return false;
+    }
+    return dashboard && 'total_inventory_value' in dashboard;
+}
+
+function isStaffDashboard(dashboard: unknown): dashboard is StaffDashboard {
+    if (!dashboard || typeof dashboard !== 'object') {
+        return false;
+    }
+    return dashboard && 'assigned_repairs' in dashboard;
+}
+
+function isCustomerDashboard(dashboard: unknown): dashboard is CustomerDashboard {
+    if (!dashboard || typeof dashboard !== 'object') {
+        return false;
+    }
+    return dashboard && 'registered_devices' in dashboard;
+}
 
 const Overview = () => {
     const {user} = useAuth();
+
+    const revenueChartData = useMemo(() => {
+        if (!user?.dashboard) return [];
+        const dashboard = user.dashboard;
+        if (isAdminDashboard(dashboard)) {
+            return [{
+                month: 'Current',
+                amount: dashboard.revenue_data.total_revenue
+            }];
+        }
+        return [];
+    }, [user?.dashboard]);
 
     if (!user) {
         return (
@@ -25,81 +59,95 @@ const Overview = () => {
         );
     }
 
-    // Extract the necessary data
-    const dashboardData = user.dashboard;
-    const userRole = user.role;
-    // const userInfo = user.user;
+    const {dashboard, role} = user;
+
+    let typedDashboard: AdminDashboard | StaffDashboard | CustomerDashboard;
+    if (role === 'admin' && isAdminDashboard(dashboard)) {
+        typedDashboard = dashboard;
+    } else if (role === 'staff' && isStaffDashboard(dashboard)) {
+        typedDashboard = dashboard;
+    } else if (role === 'customer' && isCustomerDashboard(dashboard)) {
+        typedDashboard = dashboard;
+    } else {
+        // Handle unexpected dashboard type
+        console.error('Dashboard type does not match user role');
+        return (
+            <div className="flex items-center justify-center h-screen">
+                <div>Error: Invalid dashboard type</div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-[#F8F9FA]">
             <main className="container mx-auto p-4">
                 {/* Stats Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                    {userRole === 'admin' && (
+                    {isAdminDashboard(typedDashboard) && (
                         <>
                             <StatCard
                                 title="Total Repairs"
-                                value={dashboardData.total_repairs}
+                                value={typedDashboard.total_repairs}
                                 icon={<Laptop className="h-6 w-6"/>}
                                 color="#0066FF"/>
                             <StatCard
                                 title="Pending Repairs"
-                                value={dashboardData.pending_repairs}
+                                value={typedDashboard.pending_repairs}
                                 icon={<AlertCircle className="h-6 w-6"/>}
                                 color="#DC3545"/>
                             <StatCard
                                 title="Low Stock Items"
-                                value={dashboardData.low_stock_items}
+                                value={typedDashboard.low_stock_items}
                                 icon={<Package className="h-6 w-6"/>}
                                 color="#28A745"/>
                             <StatCard
                                 title="Active Staff"
-                                value={dashboardData.active_staff}
+                                value={typedDashboard.active_staff}
                                 icon={<Users className="h-6 w-6"/>}
                                 color="#FFC107"/>
                         </>
                     )}
 
-                    {userRole === 'staff' && (
+                    {isStaffDashboard(typedDashboard) && (
                         <>
                             <StatCard
                                 title="Assigned Repairs"
-                                value={dashboardData.assigned_repairs || 0}
+                                value={typedDashboard.assigned_repairs}
                                 icon={<Laptop/>}
                                 color="#0066FF"
                             />
                             <StatCard
                                 title="Pending Repairs"
-                                value={dashboardData.pending_repairs || 0}
+                                value={typedDashboard.pending_repairs}
                                 icon={<AlertCircle/>}
                                 color="#DC3545"
                             />
                             <StatCard
                                 title="Completed Repairs"
-                                value={dashboardData.completed_repairs || 0}
+                                value={typedDashboard.completed_repairs}
                                 icon={<Package/>}
                                 color="#28A745"
                             />
                         </>
                     )}
 
-                    {userRole === 'customer' && (
+                    {isCustomerDashboard(typedDashboard) && (
                         <>
                             <StatCard
                                 title="Total Bookings"
-                                value={dashboardData.total_bookings || 0}
+                                value={typedDashboard.total_bookings}
                                 icon={<Calendar/>}
                                 color="#0066FF"
                             />
                             <StatCard
                                 title="Active Bookings"
-                                value={dashboardData.active_bookings || 0}
+                                value={typedDashboard.active_bookings}
                                 icon={<AlertCircle/>}
                                 color="#DC3545"
                             />
                             <StatCard
                                 title="Registered Devices"
-                                value={dashboardData.registered_devices || 0}
+                                value={typedDashboard.registered_devices}
                                 icon={<Laptop/>}
                                 color="#28A745"
                             />
@@ -110,7 +158,7 @@ const Overview = () => {
                 {/* Charts and Additional Info */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {/* Revenue Chart (Admin Only) */}
-                    {userRole === 'admin' && dashboardData.revenue_data && (
+                    {isAdminDashboard(typedDashboard) && revenueChartData.length > 0 && (
                         <Card>
                             <CardHeader>
                                 <CardTitle>Revenue Overview</CardTitle>
@@ -118,7 +166,7 @@ const Overview = () => {
                             <CardContent>
                                 <div className="h-72">
                                     <ResponsiveContainer width="100%" height="100%">
-                                        <LineChart data={dashboardData.revenue_data}>
+                                        <LineChart data={revenueChartData}>
                                             <CartesianGrid strokeDasharray="3 3"/>
                                             <XAxis dataKey="month"/>
                                             <YAxis/>
@@ -143,7 +191,7 @@ const Overview = () => {
                         </CardHeader>
                         <CardContent>
                             <div className="space-y-4">
-                                {dashboardData.recent_activity.map((activity, index) => (
+                                {typedDashboard.recent_activity.map((activity, index) => (
                                     <div key={`${activity.type}-${activity.id}-${index}`}
                                          className="flex items-start space-x-4">
                                         <div className="rounded-full p-2 bg-blue-100">
@@ -154,9 +202,9 @@ const Overview = () => {
                                             )}
                                         </div>
                                         <div className="flex-1">
-                                            <p className="text-sm text-gray-800">{activity.description}</p>
+                                            <p className="text-sm text-gray-800">{activity.action}</p>
                                             <p className="text-xs text-gray-500">
-                                                {formatDistance(new Date(activity.date), new Date(), {addSuffix: true})}
+                                                {formatDistance(new Date(activity.timestamp), new Date(), {addSuffix: true})}
                                             </p>
                                         </div>
                                     </div>
@@ -166,7 +214,7 @@ const Overview = () => {
                     </Card>
 
                     {/* Quick Actions */}
-                    {userRole === 'admin' && (
+                    {isAdminDashboard(typedDashboard) && (
                         <Card>
                             <CardHeader>
                                 <CardTitle>Quick Actions</CardTitle>

@@ -74,17 +74,41 @@ class BookingStatus:
     ]
 
 
-class PaymentStatus:
+class Finances:
     PENDING = 'pending'
     PAID = 'paid'
     FAILED = 'failed'
     REFUNDED = 'refunded'
+
+    BOOKING_PAYMENT = 'booking_payment'
+    PARTS_PURCHASE = 'parts_purchase'
+    SERVICE_PAYMENT = 'service_payment'
+    STAFF_SALARY = 'staff_salary'
+
+    CASH = 'cash'
+    CARD = 'card'
+    MPESA = 'mpesa'
+    BANK_TRANSFER = 'bank_transfer'
 
     CHOICES = [
         (PENDING, _('Pending')),
         (PAID, _('Paid')),
         (FAILED, _('Failed')),
         (REFUNDED, _('Refunded')),
+    ]
+
+    TRANSACTION_TYPES = [
+        (BOOKING_PAYMENT, _('Booking Payment')),
+        (PARTS_PURCHASE, _('Parts Purchase')),
+        (SERVICE_PAYMENT, _('Service Payment')),
+        (STAFF_SALARY, _('Staff Salary')),
+    ]
+
+    PAYMENT_METHODS = [
+        (CASH, _('Cash')),
+        (CARD, _('Card')),
+        (MPESA, _('M-Pesa')),
+        (BANK_TRANSFER, _('Bank Transfer')),
     ]
 
 

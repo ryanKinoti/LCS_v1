@@ -65,14 +65,9 @@ class BookingAdmin(admin.ModelAdmin):
     Includes validation for business hours and technician availability.
     """
     list_display = (
-        'job_card_number',
-        'get_customer_info',
-        'get_service_info',
-        'get_scheduled_time',
-        'get_status_badge',
-        'get_payment_status',
-        'get_total_amount'
-    )
+        'job_card_number', 'get_customer_info', 'get_service_info', 'get_scheduled_time', 'get_status_badge',
+        'get_payment_status', 'get_total_amount', 'get_parts_summary')
+    readonly_fields = ('created_at', 'updated_at', 'total_parts_cost', 'get_parts_details')
     list_filter = (
         'status',
         'payment_status',
@@ -109,8 +104,9 @@ class BookingAdmin(admin.ModelAdmin):
                 'payment_status'
             )
         }),
-        ('Financial Details', {
+        ('Parts and Financial Details', {
             'fields': (
+                'get_parts_details',
                 'total_parts_cost',
             )
         }),
@@ -129,7 +125,48 @@ class BookingAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         })
     )
-    readonly_fields = ('created_at', 'updated_at', 'total_parts_cost')
+
+    def get_parts_summary(self, obj):
+        """Display a summary of parts in the list view"""
+        parts_count = obj.bookingparts_set.count()
+        if parts_count == 0:
+            return format_html('<span style="color: gray;">No parts</span>')
+
+        return format_html(
+            '<span style="color: blue;">{} part{}</span>',
+            parts_count,
+            's' if parts_count > 1 else ''
+        )
+
+    get_parts_summary.short_description = 'Parts'
+
+    def get_parts_details(self, obj):
+        """Display detailed parts information in the detail view"""
+        parts = obj.bookingparts_set.all()
+        if not parts:
+            return format_html('<span style="color: gray;">No parts assigned to this booking</span>')
+
+        parts_html = ['<table style="width: 100%;">', '<tr>',
+                      '<th style="padding: 8px;">Part Name</th>', '<th style="padding: 8px;">Quantity</th>',
+                      '<th style="padding: 8px;">Unit Price</th>', '<th style="padding: 8px;">Total</th>', '</tr>']
+
+        for booking_part in parts:
+            part = booking_part.part
+            total = part.price * booking_part.quantity if part.price else 0
+
+            parts_html.append('<tr>')
+            parts_html.append(f'<td style="padding: 8px;">{part.name}</td>')
+            parts_html.append(f'<td style="padding: 8px;">{booking_part.quantity}</td>')
+            parts_html.append(
+                f'<td style="padding: 8px;">KES {"{:,.2f}".format(part.price) if part.price else "N/A"}</td>'
+            )
+            parts_html.append(f'<td style="padding: 8px;">KES {"{:,.2f}".format(total)}</td>')
+            parts_html.append('</tr>')
+
+        parts_html.append('</table>')
+        return format_html(''.join(parts_html))
+
+    get_parts_details.short_description = 'Parts Details'
 
     def get_customer_info(self, obj):
         """Display customer information with a link to their profile"""

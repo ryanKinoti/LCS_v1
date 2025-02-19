@@ -1,15 +1,17 @@
 # apps/bookings/models.py
 from datetime import datetime, timedelta
 
+from django.contrib.contenttypes.fields import GenericRelation
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from apps.accounts.models import CustomerProfile, StaffProfile
+from apps.finances.models import Transaction
 from apps.inventory.models import DevicePart
 from apps.services.models import Service, DetailedService
-from utils.constants import BookingStatus, PaymentStatus, BUSINESS_HOURS
+from utils.constants import BookingStatus, Finances, BUSINESS_HOURS
 
 
 class Booking(models.Model):
@@ -30,7 +32,8 @@ class Booking(models.Model):
 
     # financials
     total_parts_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    payment_status = models.CharField(max_length=10, choices=PaymentStatus.CHOICES, default=PaymentStatus.PENDING)
+    payment_status = models.CharField(max_length=10, choices=Finances.CHOICES, default=Finances.PENDING)
+    transactions = GenericRelation(Transaction)
 
     # additional info
     notes = models.TextField(blank=True, help_text=_("Additional details about the appointment."))

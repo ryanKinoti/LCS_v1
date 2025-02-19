@@ -11,7 +11,7 @@ from apps.accounts.models import CustomerProfile, StaffProfile
 from apps.inventory.models import Device, DevicePart
 from apps.services.models import DetailedService
 from apps.bookings.models import Booking, BookingParts
-from utils.constants import BookingStatus, PaymentStatus, BUSINESS_HOURS
+from utils.constants import BookingStatus, Finances, BUSINESS_HOURS
 
 faker = Faker()
 
@@ -140,9 +140,9 @@ class Command(BaseCommand):
                             BookingStatus.IN_PROGRESS
                         ])
                         payment_status = random.choice([
-                            PaymentStatus.PAID,
-                            PaymentStatus.FAILED,
-                            PaymentStatus.REFUNDED
+                            Finances.PAID,
+                            Finances.FAILED,
+                            Finances.REFUNDED
                         ])
                     else:
                         booking_date = self.generate_business_datetime(
@@ -152,7 +152,7 @@ class Command(BaseCommand):
                             BookingStatus.PENDING,
                             BookingStatus.CONFIRMED
                         ])
-                        payment_status = PaymentStatus.PENDING
+                        payment_status = Finances.PENDING
 
                     # Create booking
                     booking = Booking.objects.create(

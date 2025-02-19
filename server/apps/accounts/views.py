@@ -90,24 +90,17 @@ class UserViewSet(viewsets.ModelViewSet):
     def get_admin_data(self, request):
         user = request.user
         if not user.is_superuser:
-            return Response({'error': 'You do not have permission to access this endpoint.'},
-                            status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {'error': 'You do not have permission to access this endpoint.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
 
-        today = timezone.now()
-        thirty_days_ago = today - timedelta(days=30)
-
-        active_staff = StaffProfile.objects.filter(user__is_active=True).count()
-
-        data = {
-            'total_repairs': 0,
-            'pending_repairs': 0,
-            'low_stock_items': 0,
-            'total_inventory_value': 0,
-            'active_staff': active_staff,
-            'revenue_data': {},
-            'recent_activity': []
+        # Prepare context data
+        context_data = {
+            'active_staff': StaffProfile.objects.filter(user__is_active=True).count()
         }
-        return AdminDashboardSerializer(data).data
+
+        return AdminDashboardSerializer(context_data).data
 
     def get_staff_data(self, request):
         data = {

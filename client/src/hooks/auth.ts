@@ -28,47 +28,54 @@ export interface User {
     first_name: string;
     last_name: string;
     full_name: string;
-    phone_number: string;
-    profile_type?: 'customer' | 'staff';
-    profile_data?: never;
-    role?: string;
+    phone_number: string | null;
 }
 
-export interface DashboardData {
-    // Admin only
+// Overview Interfaces
+export interface RevenueData {
+    total_revenue: number;
+    bookings_count: number;
+    average_booking_value: number;
+}
+
+export interface Activity {
+    type: string;
+    action: string;
+    timestamp: string;
+    id: number;
+}
+
+export interface AdminDashboard {
     total_repairs: number;
     pending_repairs: number;
+    completed_repairs: number;
     low_stock_items: number;
     total_inventory_value: number;
     active_staff: number;
-    revenue_data: Array<{
-        month: string;
-        amount: number;
-    }>;
+    revenue_data: RevenueData;
+    recent_activity: Activity[];
+}
 
-    // Staff only
+export interface StaffDashboard {
     assigned_repairs: number;
+    pending_repairs: number;
     completed_repairs: number;
-    average_repair_time: number;
+    recent_activity: Activity[];
+}
 
-    // Customer only
+export interface CustomerDashboard {
     total_bookings: number;
     active_bookings: number;
     registered_devices: number;
-
-    // All
-    recent_activity: Array<{
-        type: string;
-        id: number;
-        description: string;
-        date: string;
-    }>;
+    recent_activity: Activity[];
 }
+
+export type Dashboard = AdminDashboard | StaffDashboard | CustomerDashboard;
 
 export interface UserResponse {
     user: User;
     role: 'admin' | 'staff' | 'customer';
-    dashboard: DashboardData;
+    dashboard: Dashboard;
 }
 
 interface RegisterResponse {

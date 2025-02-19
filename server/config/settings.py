@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     'django_seed',
     'apps.services.apps.ServicesConfig',
     'apps.inventory.apps.InventoryConfig',
+    'apps.finances.apps.FinancesConfig',
     'apps.bookings.apps.BookingsConfig',
 ]
 
