@@ -24,24 +24,23 @@ function getDashboardPath(role: 'admin' | 'staff' | 'customer' | null): string {
 
 const LoginPage = () => {
     const navigate = useNavigate();
-    const {login, user, loading: authLoading} = useAuth();
+    const {login, user, status} = useAuth();
     const [error, setError] = useState<string>('');
-    const [isLoading, setIsLoading] = useState<boolean>(false);
 
     const [formData, setFormData] = useState<LoginCredentials>({
         email: "",
         password: ""
     });
 
-    const isPageLoading = isLoading || authLoading;
+    const isLoading = status === 'authenticating';
 
     useEffect(() => {
-        if (user && !isPageLoading) {
+        if (status === 'authenticated' && user) {
             const redirectPath = sessionStorage.getItem('redirectAfterLogin') || getDashboardPath(user.role);
             sessionStorage.removeItem('redirectAfterLogin');
             navigate(redirectPath, {replace: true});
         }
-    }, [user, isPageLoading, navigate]);
+    }, [user, status, navigate]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData(prev => ({
@@ -70,12 +69,8 @@ const LoginPage = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-
         if (!validateForm()) return;
-
-        setIsLoading(true)
         setError("")
-
 
         try {
             await login(formData);
@@ -106,12 +101,10 @@ const LoginPage = () => {
 
             setError(errorMessage);
 
-        } finally {
-            setIsLoading(false);
         }
     };
 
-    if (isPageLoading) {
+    if (status === 'authenticating') {
         return (
             <div className="flex items-center justify-center min-h-screen">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"/>

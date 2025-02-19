@@ -7,7 +7,7 @@ import {Loader2} from "lucide-react";
 interface AuthState {
     firebaseUser: FirebaseUser | null;    // Firebase authentication state
     user: BackendUser | null;             // Backend user data
-    loading: boolean;                      // Loading state for initial auth check
+    status: 'idle' | 'authenticating' | 'authenticated' | 'error';
     initialized: boolean;                  // Whether auth system has completed initial load
 }
 
@@ -32,7 +32,7 @@ export function AuthProvider({children}: AuthProviderProps) {
     const [state, setState] = useState<AuthState>({
         firebaseUser: null,
         user: null,
-        loading: true,
+        status: 'idle',
         initialized: false
     });
 
@@ -42,31 +42,33 @@ export function AuthProvider({children}: AuthProviderProps) {
 
     const fetchUserProfile = useCallback(async () => {
         try {
+            updateState({
+                status: 'authenticating',
+            });
             const userProfile = await AuthService.getCurrentUser();
             if (userProfile) {
                 updateState({
                     user: userProfile,
-                    loading: false,
+                    status: 'authenticated',
                     initialized: true
                 });
             }
         } catch (error) {
             console.error('Error fetching user profile:', error);
             await AuthService.logout();
-            updateState({user: null, firebaseUser: null, loading: false, initialized: true});
+            updateState({user: null, firebaseUser: null, status: 'error', initialized: true});
         }
     }, [updateState]);
 
     useEffect(() => {
         const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
             if (firebaseUser) {
-                updateState({firebaseUser, loading: true});
                 await fetchUserProfile();
             } else {
                 updateState({
                     firebaseUser: null,
                     user: null,
-                    loading: false,
+                    status: 'idle',
                     initialized: true
                 });
             }
@@ -77,29 +79,32 @@ export function AuthProvider({children}: AuthProviderProps) {
 
     const actions: AuthActions = {
         login: async (credentials) => {
-            updateState({loading: true});
+            updateState({status: 'authenticating',});
             try {
                 await AuthService.login(credentials);
-            } finally {
-                updateState({loading: false});
+            } catch (error) {
+                updateState({ status: 'error' });
+                throw error;
             }
         },
 
         register: async (credentials) => {
-            updateState({loading: true});
+            updateState({status: 'authenticating',});
             try {
                 await AuthService.register(credentials);
-            } finally {
-                updateState({loading: false});
+            } catch (error) {
+                updateState({ status: 'error' });
+                throw error;
             }
         },
 
         logout: async () => {
-            updateState({loading: true});
+            updateState({ status: 'authenticating' });
             try {
                 await AuthService.logout();
-            } finally {
-                updateState({loading: false});
+            } catch (error) {
+                updateState({ status: 'error' });
+                throw error;
             }
         },
 

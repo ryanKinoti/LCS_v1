@@ -8,10 +8,10 @@ interface ProtectedRouteProps {
 }
 
 export const ProtectedRoute = ({children, allowedRoles = []}: ProtectedRouteProps) => {
-    const {user, loading, initialized} = useAuth();
+    const {user, status, initialized} = useAuth();
     const location = useLocation();
 
-    if (!initialized || loading) {
+    if (!initialized || status === 'authenticating') {
         return (
             <div className="flex items-center justify-center h-screen">
                 <Loader2 className="h-8 w-8 animate-spin"/>
@@ -19,14 +19,14 @@ export const ProtectedRoute = ({children, allowedRoles = []}: ProtectedRouteProp
         );
     }
 
-    if (!user) {
+    if (status === 'idle' || status === 'error') {
         sessionStorage.setItem('redirectAfterLogin', location.pathname);
         return <Navigate to="/" replace state={{from: location}}/>;
     }
 
-    if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
-        if (!allowedRoles.includes(user.role)) {
-            return <Navigate to={getDashboardPath(user.role)} replace/>;
+    if (allowedRoles.length > 0 && !allowedRoles.includes(user!.role)) {
+        if (!allowedRoles.includes(user!.role)) {
+            return <Navigate to={getDashboardPath(user!.role)} replace/>;
         }
     }
 
