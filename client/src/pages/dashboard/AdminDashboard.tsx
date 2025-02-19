@@ -1,6 +1,6 @@
 import {useState} from 'react';
 import AdminLayout from '@/components/dashboards/layouts/AdminLayout';
-import Overview from '@/components/dashboards/admin/Overview';
+import Overview from '@/components/dashboards/common/Overview.tsx';
 import BookingsView from '@/components/dashboards/common/booking/BookingsView';
 
 const AdminDashboard = () => {
