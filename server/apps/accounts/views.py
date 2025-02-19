@@ -1,10 +1,8 @@
 import logging
-from datetime import timedelta
 
 from django.contrib.auth import get_user_model, login
 from django.db import transaction
 from django.middleware.csrf import get_token
-from django.utils import timezone
 from rest_framework import generics, serializers, status, viewsets
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated

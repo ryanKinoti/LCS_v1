@@ -32,6 +32,7 @@ class Booking(models.Model):
 
     # financials
     total_parts_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     payment_status = models.CharField(max_length=10, choices=Finances.CHOICES, default=Finances.PENDING)
     transactions = GenericRelation(Transaction)
 
@@ -104,6 +105,27 @@ class Booking(models.Model):
 
         if overlapping_bookings.exists():
             raise ValidationError(_('This time slot overlaps with another booking'))
+
+    @property
+    def total_parts_cost(self):
+        """Calculate the total cost of all parts used in this booking"""
+        return sum(
+            bp.part.price * bp.quantity
+            for bp in self.bookingparts_set.all()
+            if bp.part.price
+        )
+
+    @property
+    def total_amount(self):
+        """Calculate the total booking amount including service and parts"""
+        service_cost = self.detailed_service.price if self.detailed_service else 0
+        return service_cost + self.total_parts_cost
+
+    @property
+    def payment_status(self):
+        """Get the payment status from the associated transaction"""
+        transaction = self.transactions.first()  # Assuming one transaction per booking
+        return transaction.status if transaction else Finances.PENDING
 
 
 class BookingParts(models.Model):

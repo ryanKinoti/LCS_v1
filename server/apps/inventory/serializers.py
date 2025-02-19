@@ -102,6 +102,7 @@ class DevicePartDetailSerializer(serializers.ModelSerializer):
     device information if applicable.
     """
     customer_laptop = DeviceMinimalSerializer(read_only=True)
+    is_low_stock = serializers.SerializerMethodField()
 
     class Meta:
         model = DevicePart
@@ -110,6 +111,9 @@ class DevicePartDetailSerializer(serializers.ModelSerializer):
             'price', 'quantity', 'status', 'warranty_months',
             'minimum_stock', 'created_at'
         ]
+
+    def get_is_low_stock(self, obj):
+        return obj.quantity <= obj.minimum_stock
 
 
 class PartMovementCreateSerializer(serializers.ModelSerializer):

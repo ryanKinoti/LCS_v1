@@ -99,6 +99,8 @@ class DetailedServiceCreateSerializer(serializers.ModelSerializer):
     Manages the creation and updating of detailed services.
     Includes validation for price and ensures proper service-device combinations.
     """
+    is_available = serializers.BooleanField(default=True)
+    availability_notes = serializers.CharField(required=False)
 
     class Meta:
         model = DetailedService
@@ -118,6 +120,14 @@ class DetailedServiceCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Price must be greater than zero")
 
         return data
+
+    def validate_price(self, value):
+        """Ensure price is within reasonable bounds"""
+        if value < 0:
+            raise serializers.ValidationError("Price cannot be negative")
+        if value > 1000000:  # Adjust limit as needed
+            raise serializers.ValidationError("Price exceeds maximum limit")
+        return value
 
 
 class ServiceCategoryDetailSerializer(serializers.ModelSerializer):

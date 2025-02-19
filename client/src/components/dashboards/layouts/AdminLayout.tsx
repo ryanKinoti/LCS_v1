@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import {useToast} from "@//hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast"
-import logoMain from "@/assets/logo-main.png";
+import logoMain from "@/assets/lcs_main_logo.png";
 import {Button} from "@/components/ui/button";
 import {Link, useNavigate} from "react-router-dom";
 import {AuthService} from "@/hooks/auth"

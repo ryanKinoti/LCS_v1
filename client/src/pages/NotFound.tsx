@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
-import logoMain from "@/assets/logo-main.png"
+import logoMain from "@/assets/lcs_main_logo.png"
 
 const NotFound = () => {
     return (

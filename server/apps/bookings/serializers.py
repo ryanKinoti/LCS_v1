@@ -7,7 +7,7 @@ from apps.accounts.serializers import CustomerProfileSerializer, StaffProfileSer
 from apps.services.serializers import DetailedServiceMinimalSerializer
 from apps.inventory.serializers import DeviceMinimalSerializer, DevicePartMinimalSerializer
 from .models import Booking, BookingParts
-from utils.constants import BUSINESS_HOURS, BookingStatus
+from utils.constants import BUSINESS_HOURS, BookingStatus, Finances
 
 
 class BookingPartsSerializer(serializers.ModelSerializer):
@@ -43,6 +43,22 @@ class BookingPartsSerializer(serializers.ModelSerializer):
             )
 
         return data
+
+    def validate_device(self, value):
+        """Ensure device belongs to customer"""
+        if value and value.customer != self.context['request'].user:
+            raise serializers.ValidationError(
+                "Device does not belong to the customer"
+            )
+        return value
+
+    # Add payment validation
+    def validate_payment_status(self, value):
+        if value == Finances.PAID and not self.instance:
+            raise serializers.ValidationError(
+                "New bookings cannot be marked as paid"
+            )
+        return value
 
 
 class BookingMinimalSerializer(serializers.ModelSerializer):

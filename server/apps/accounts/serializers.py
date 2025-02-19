@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import timedelta, datetime
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
@@ -142,8 +142,15 @@ class StaffProfileSerializer(serializers.ModelSerializer):
         return value
 
     def validate_availability(self, value):
-        if not isinstance(value, dict):
-            raise serializers.ValidationError("Availability must be a dictionary")
+        for day, schedule in value.items():
+            if 'start' not in schedule or 'end' not in schedule:
+                raise serializers.ValidationError(f"Missing start/end time for {day}")
+            # Add validation for time format
+            try:
+                datetime.strptime(schedule['start'], '%H:%M')
+                datetime.strptime(schedule['end'], '%H:%M')
+            except ValueError:
+                raise serializers.ValidationError("Time must be in HH:MM format")
         return value
 
     def create(self, validated_data):

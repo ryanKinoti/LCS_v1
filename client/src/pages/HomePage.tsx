@@ -1,5 +1,5 @@
 import React from "react"
-import logoMain from '@/assets/logo-main.png'
+import logoMain from '@/assets/lcs_main_logo.png'
 import Navigation from '@/components/ui/navigation';
 import {Button} from "@/components/ui/button"
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card"

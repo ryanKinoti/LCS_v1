@@ -1,10 +1,25 @@
 from django.contrib import admin
+from django.contrib.admin import SimpleListFilter
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.html import format_html
 
+from utils.constants import Finances
 from .models import Booking, BookingParts
 
+class PaymentStatusFilter(SimpleListFilter):
+    title = 'Payment Status'  # display name in admin
+    parameter_name = 'payment_status'  # URL query parameter
+
+    def lookups(self, request, model_admin):
+        """Return list of possible filter options"""
+        return Finances.CHOICES
+
+    def queryset(self, request, queryset):
+        """Filter the queryset based on selected value"""
+        if self.value():
+            return queryset.filter(transactions__status=self.value())
+        return queryset
 
 class BookingPartsInline(admin.TabularInline):
     """
@@ -70,7 +85,7 @@ class BookingAdmin(admin.ModelAdmin):
     readonly_fields = ('created_at', 'updated_at', 'total_parts_cost', 'get_parts_details')
     list_filter = (
         'status',
-        'payment_status',
+        PaymentStatusFilter,
         'is_active',
         'scheduled_time',
         'technician',
@@ -247,6 +262,7 @@ class BookingAdmin(admin.ModelAdmin):
 
     def get_payment_status(self, obj):
         """Display payment status with color coding"""
+        status = obj.payment_status
         status_colors = {
             'pending': 'orange',
             'partial': 'blue',
@@ -257,7 +273,7 @@ class BookingAdmin(admin.ModelAdmin):
         return format_html(
             '<span style="color: {};">{}</span>',
             color,
-            obj.get_payment_status_display()
+            dict(Finances.CHOICES).get(status, status)
         )
 
     get_payment_status.short_description = 'Payment'

@@ -79,6 +79,7 @@ class Finances:
     PAID = 'paid'
     FAILED = 'failed'
     REFUNDED = 'refunded'
+    PARTIAL = 'partial'
 
     BOOKING_PAYMENT = 'booking_payment'
     PARTS_PURCHASE = 'parts_purchase'
@@ -95,6 +96,7 @@ class Finances:
         (PAID, _('Paid')),
         (FAILED, _('Failed')),
         (REFUNDED, _('Refunded')),
+        (PARTIAL, _('Partial')),
     ]
 
     TRANSACTION_TYPES = [

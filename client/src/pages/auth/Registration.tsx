@@ -7,7 +7,7 @@ import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/c
 import {RadioGroup, RadioGroupItem} from "@/components/ui/radio-group"
 import {Label} from "@/components/ui/label"
 import {User, Mail, Phone, Lock} from 'lucide-react'
-import logoMain from "@/assets/logo-main.png"
+import logoMain from "@/assets/lcs_main_logo.png"
 import {useAuth} from "@/contexts/AuthContext.tsx";
 import {RegisterCredentials} from "@/hooks/auth";
 

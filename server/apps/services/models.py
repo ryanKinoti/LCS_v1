@@ -3,7 +3,7 @@ from django.core.exceptions import ValidationError
 from django.db import models
 
 from apps.inventory.models import DevicePart
-from utils.constants import DeviceParts, Devices
+from utils.constants import Devices
 
 
 class ServiceCategory(models.Model):
