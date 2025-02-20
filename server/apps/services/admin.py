@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from .models import ServiceCategory, Service, DetailedService, ServicePartsRequired
+from ..inventory.models import DevicePart
 
 
 class ServiceInline(admin.TabularInline):
@@ -124,6 +125,15 @@ class ServicePartsRequiredInline(admin.TabularInline):
     extra = 1
     fields = ('part_type', 'quantity', 'mandatory')
 
+    def formfield_for_manytomany(self, db_field, request, **kwargs):
+        if db_field.name == "part_type":
+            # Only show parts that are not tied to customer devices
+            kwargs["queryset"] = DevicePart.objects.filter(
+                customer_laptop__isnull=True,
+                status='in_stock'
+            )
+        return super().formfield_for_manytomany(db_field, request, **kwargs)
+
 
 @admin.register(DetailedService)
 class DetailedServiceAdmin(admin.ModelAdmin):
@@ -157,7 +167,8 @@ class DetailedServiceAdmin(admin.ModelAdmin):
 
     def get_formatted_price(self, obj):
         """Display the price with currency formatting"""
-        return format_html('KES {:,.2f}', obj.price)
+        formatted_price = f"KES {obj.price:,.2f}"
+        return format_html("<span>{}</span>", formatted_price)
 
     get_formatted_price.short_description = 'Price'
 

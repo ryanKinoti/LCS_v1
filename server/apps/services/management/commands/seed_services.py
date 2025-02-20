@@ -1,211 +1,123 @@
 # apps/services/management/commands/seed_services.py
-from django.core.management.base import BaseCommand
-from django.db import transaction
-from faker import Faker
+import json
+import os
 from datetime import timedelta
 
-from apps.services.models import ServiceCategory, Service, DetailedService, ServicePartsRequired
-from utils.constants import Devices
+from django.core.exceptions import ValidationError
+from django.core.management.base import BaseCommand
+from django.db import transaction
 
-faker = Faker()
+from apps.services.models import ServiceCategory, Service, DetailedService
+from config import settings
 
 
 class Command(BaseCommand):
-    help = 'Seed the database with realistic service categories and services'
+    help = 'Seed the database with services data from JSON file'
 
     def add_arguments(self, parser):
         parser.add_argument(
-            '--categories',
-            default=5,
-            type=int,
-            help='Number of service categories to create'
+            '--json-file',
+            type=str,
+            default=os.path.join(
+                settings.BASE_DIR,
+                'apps',
+                'services',
+                'management',
+                'commands',
+                'data.json'
+            ),
+            help='Path to the JSON file containing services data'
         )
 
-    def handle(self, *args, **options):
-        self.stdout.write("Creating service categories and services...")
+    def validate_json_data(self, data):
+        """Validate the structure and content of JSON data"""
+        if not isinstance(data, dict) or 'service_categories' not in data:
+            raise ValidationError("JSON must contain 'service_categories' key")
 
-        # Predefined realistic service data
-        service_categories = [
-            {
-                'name': 'Hardware Repairs',
-                'description': 'Physical repairs and component replacements',
-                'services': [
-                    {
-                        'name': 'Screen Replacement',
-                        'description': 'Replace damaged or faulty display screens',
-                        'estimated_time': timedelta(hours=1, minutes=30),
-                        'details': [
-                            {
-                                'device': Devices.LAPTOP,
-                                'price': 15000,
-                                'changes': 'Replace laptop screen with new compatible model'
-                            },
-                            {
-                                'device': Devices.DESKTOP,
-                                'price': 20000,
-                                'changes': 'Replace desktop monitor'
-                            }
-                        ]
-                    },
-                    {
-                        'name': 'Battery Replacement',
-                        'description': 'Replace old or faulty batteries',
-                        'estimated_time': timedelta(minutes=45),
-                        'details': [
-                            {
-                                'device': Devices.LAPTOP,
-                                'price': 8000,
-                                'changes': 'Replace laptop battery with new compatible model'
-                            }
-                        ]
-                    }
-                ]
-            },
-            {
-                'name': 'Software Services',
-                'description': 'Software installation, updates, and troubleshooting',
-                'services': [
-                    {
-                        'name': 'Operating System Installation',
-                        'description': 'Fresh installation or upgrade of operating systems',
-                        'estimated_time': timedelta(hours=2),
-                        'details': [
-                            {
-                                'device': Devices.LAPTOP,
-                                'price': 5000,
-                                'changes': 'Install and configure operating system with necessary drivers'
-                            },
-                            {
-                                'device': Devices.DESKTOP,
-                                'price': 5000,
-                                'changes': 'Install and configure operating system with necessary drivers'
-                            }
-                        ]
-                    },
-                    {
-                        'name': 'Virus Removal',
-                        'description': 'Remove malware and viruses, install protection',
-                        'estimated_time': timedelta(hours=1, minutes=30),
-                        'details': [
-                            {
-                                'device': Devices.LAPTOP,
-                                'price': 3500,
-                                'changes': 'Scan and remove viruses, install antivirus'
-                            },
-                            {
-                                'device': Devices.DESKTOP,
-                                'price': 3500,
-                                'changes': 'Scan and remove viruses, install antivirus'
-                            }
-                        ]
-                    }
-                ]
-            },
-            {
-                'name': 'Maintenance Services',
-                'description': 'Regular maintenance and cleaning services',
-                'services': [
-                    {
-                        'name': 'Deep Cleaning',
-                        'description': 'Thorough cleaning of device components',
-                        'estimated_time': timedelta(hours=1),
-                        'details': [
-                            {
-                                'device': Devices.LAPTOP,
-                                'price': 3000,
-                                'changes': 'Deep clean laptop including keyboard and fans'
-                            },
-                            {
-                                'device': Devices.DESKTOP,
-                                'price': 3500,
-                                'changes': 'Deep clean desktop components and peripherals'
-                            },
-                            {
-                                'device': Devices.PRINTER,
-                                'price': 2500,
-                                'changes': 'Clean printer components and calibrate'
-                            }
-                        ]
-                    }
-                ]
-            },
-            {
-                'name': 'Data Services',
-                'description': 'Data recovery and backup solutions',
-                'services': [
-                    {
-                        'name': 'Data Recovery',
-                        'description': 'Recover data from damaged or corrupted storage',
-                        'estimated_time': timedelta(hours=3),
-                        'details': [
-                            {
-                                'device': Devices.LAPTOP,
-                                'price': 7500,
-                                'changes': 'Recover data from damaged hard drive'
-                            },
-                            {
-                                'device': Devices.DESKTOP,
-                                'price': 7500,
-                                'changes': 'Recover data from damaged hard drive'
-                            }
-                        ]
-                    },
-                    {
-                        'name': 'Data Backup',
-                        'description': 'Create backups of important data',
-                        'estimated_time': timedelta(hours=1),
-                        'details': [
-                            {
-                                'device': Devices.LAPTOP,
-                                'price': 2500,
-                                'changes': 'Create comprehensive data backup'
-                            },
-                            {
-                                'device': Devices.DESKTOP,
-                                'price': 2500,
-                                'changes': 'Create comprehensive data backup'
-                            }
-                        ]
-                    }
-                ]
-            }
-        ]
+        for category in data['service_categories']:
+            if not all(k in category for k in ['name', 'description', 'services']):
+                raise ValidationError("Each category must have name, description, and services")
+
+            for service in category['services']:
+                if not all(k in service for k in ['name', 'description', 'estimated_time', 'details']):
+                    raise ValidationError("Each service must have name, description, estimated_time, and details")
+
+                for detail in service['details']:
+                    if not all(k in detail for k in ['device', 'price', 'changes']):
+                        raise ValidationError("Each detail must have device, price, and changes")
+
+    def parse_time(self, time_str):
+        """Parse time string to timedelta"""
+        try:
+            hours, minutes, seconds = map(int, time_str.split(':'))
+            return timedelta(hours=hours, minutes=minutes, seconds=seconds)
+        except ValueError:
+            raise ValidationError(f"Invalid time format: {time_str}. Expected format: HH:MM:SS")
+
+    def handle(self, *args, **options):
+        json_file = options['json_file']
+
+        if not os.path.exists(json_file):
+            self.stdout.write(self.style.ERROR(f"JSON file not found: {json_file}"))
+            return
 
         try:
+            with open(json_file, 'r') as f:
+                data = json.load(f)
+
+            # Validate JSON structure
+            self.validate_json_data(data)
+
             with transaction.atomic():
-                for category_data in service_categories:
-                    # Create category
+                categories_created = 0
+                services_created = 0
+                details_created = 0
+
+                # Delete existing data if any
+                if ServiceCategory.objects.exists():
+                    confirm = input("Existing services found. Delete all? (yes/no): ")
+                    if confirm.lower() == 'yes':
+                        ServiceCategory.objects.all().delete()
+                        self.stdout.write("Deleted existing services data")
+
+                # Create new data
+                for category_data in data['service_categories']:
                     category = ServiceCategory.objects.create(
                         name=category_data['name'],
                         description=category_data['description']
                     )
+                    categories_created += 1
 
-                    # Create services for this category
                     for service_data in category_data['services']:
                         service = Service.objects.create(
                             name=service_data['name'],
                             category=category,
                             description=service_data['description'],
-                            estimated_time=service_data['estimated_time'],
+                            estimated_time=self.parse_time(service_data['estimated_time']),
                             active=True
                         )
+                        services_created += 1
 
-                        # Create detailed services
                         for detail_data in service_data['details']:
                             DetailedService.objects.create(
                                 service=service,
                                 device=detail_data['device'],
                                 changes_to_make=detail_data['changes'],
                                 price=detail_data['price'],
-                                notes=f"Standard {service_data['name']} for {detail_data['device']}"
+                                notes=detail_data.get('notes', '')
                             )
+                            details_created += 1
 
                 self.stdout.write(self.style.SUCCESS(f"""
 Successfully created:
-- {len(service_categories)} service categories
-- {sum(len(cat['services']) for cat in service_categories)} services
-- {sum(sum(len(service['details']) for service in cat['services']) for cat in service_categories)} detailed services
+- {categories_created} service categories
+- {services_created} services
+- {details_created} detailed services
 """))
 
+        except json.JSONDecodeError as e:
+            self.stdout.write(self.style.ERROR(f"Invalid JSON format: {str(e)}"))
+        except ValidationError as e:
+            self.stdout.write(self.style.ERROR(f"Data validation error: {str(e)}"))
         except Exception as e:
             self.stdout.write(self.style.ERROR(f"Error seeding services: {str(e)}"))

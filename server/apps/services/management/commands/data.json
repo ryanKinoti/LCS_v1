@@ -1,0 +1,312 @@
+{
+  "service_categories": [
+    {
+      "name": "Hardware Repairs",
+      "description": "Physical repairs and component replacements",
+      "services": [
+        {
+          "name": "Screen Replacement",
+          "description": "Replace damaged or faulty display screens",
+          "estimated_time": "01:30:00",
+          "details": [
+            {
+              "device": "laptop",
+              "price": 15000,
+              "changes": "Replace laptop screen with new compatible model",
+              "notes": "Includes screen calibration and testing"
+            },
+            {
+              "device": "desktop",
+              "price": 20000,
+              "changes": "Replace desktop monitor with new unit",
+              "notes": "Includes color calibration"
+            },
+            {
+              "device": "tablet",
+              "price": 12000,
+              "changes": "Replace tablet display assembly",
+              "notes": "Includes touch calibration"
+            },
+            {
+              "device": "smartphone",
+              "price": 10000,
+              "changes": "Replace smartphone screen",
+              "notes": "Includes water resistance testing"
+            },
+            {
+              "device": "printer",
+              "price": 8000,
+              "changes": "Replace printer LCD panel",
+              "notes": "Includes firmware update"
+            }
+          ]
+        },
+        {
+          "name": "Battery Replacement",
+          "description": "Replace old or faulty batteries",
+          "estimated_time": "00:45:00",
+          "details": [
+            {
+              "device": "laptop",
+              "price": 8000,
+              "changes": "Replace laptop battery with new compatible model",
+              "notes": "Includes battery life testing"
+            },
+            {
+              "device": "tablet",
+              "price": 6000,
+              "changes": "Replace tablet battery",
+              "notes": "Includes system diagnostics"
+            },
+            {
+              "device": "smartphone",
+              "price": 5000,
+              "changes": "Replace smartphone battery",
+              "notes": "Includes capacity testing"
+            },
+            {
+              "device": "ups",
+              "price": 12000,
+              "changes": "Replace UPS batteries",
+              "notes": "Includes load testing"
+            },
+            {
+              "device": "printer",
+              "price": 4000,
+              "changes": "Replace printer backup battery",
+              "notes": "Includes power test"
+            }
+          ]
+        },
+        {
+          "name": "Motherboard Repair",
+          "description": "Repair or replace faulty motherboard components",
+          "estimated_time": "03:00:00",
+          "details": [
+            {
+              "device": "laptop",
+              "price": 25000,
+              "changes": "Diagnose and repair laptop motherboard",
+              "notes": "Includes component-level repair"
+            },
+            {
+              "device": "desktop",
+              "price": 20000,
+              "changes": "Replace desktop motherboard",
+              "notes": "Includes BIOS configuration"
+            },
+            {
+              "device": "tablet",
+              "price": 18000,
+              "changes": "Repair tablet logic board",
+              "notes": "Includes water damage treatment"
+            },
+            {
+              "device": "smartphone",
+              "price": 15000,
+              "changes": "Repair smartphone mainboard",
+              "notes": "Includes chip-level repair"
+            },
+            {
+              "device": "printer",
+              "price": 12000,
+              "changes": "Repair printer mainboard",
+              "notes": "Includes firmware recovery"
+            }
+          ]
+        },
+        {
+          "name": "Port Repair",
+          "description": "Repair or replace damaged ports and connectors",
+          "estimated_time": "01:00:00",
+          "details": [
+            {
+              "device": "laptop",
+              "price": 6000,
+              "changes": "Replace laptop charging port",
+              "notes": "Includes power testing"
+            },
+            {
+              "device": "desktop",
+              "price": 4000,
+              "changes": "Repair USB ports",
+              "notes": "Includes connectivity testing"
+            },
+            {
+              "device": "tablet",
+              "price": 5000,
+              "changes": "Replace tablet charging port",
+              "notes": "Includes water resistance check"
+            },
+            {
+              "device": "smartphone",
+              "price": 5500,
+              "changes": "Replace smartphone charging port",
+              "notes": "Includes waterproofing"
+            },
+            {
+              "device": "printer",
+              "price": 4500,
+              "changes": "Repair printer network port",
+              "notes": "Includes network testing"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Software Services",
+      "description": "Software installation, updates, and troubleshooting",
+      "services": [
+        {
+          "name": "Operating System Installation",
+          "description": "Fresh installation or upgrade of operating systems",
+          "estimated_time": "02:00:00",
+          "details": [
+            {
+              "device": "laptop",
+              "price": 5000,
+              "changes": "Install and configure Windows 11",
+              "notes": "Includes driver installation"
+            },
+            {
+              "device": "desktop",
+              "price": 5000,
+              "changes": "Install and configure Linux",
+              "notes": "Includes basic software setup"
+            },
+            {
+              "device": "tablet",
+              "price": 3000,
+              "changes": "Install Android custom ROM",
+              "notes": "Includes optimization"
+            },
+            {
+              "device": "smartphone",
+              "price": 3000,
+              "changes": "Install iOS update",
+              "notes": "Includes backup and restore"
+            },
+            {
+              "device": "printer",
+              "price": 2000,
+              "changes": "Update printer firmware",
+              "notes": "Includes testing"
+            }
+          ]
+        },
+        {
+          "name": "Data Recovery",
+          "description": "Recover lost or corrupted data",
+          "estimated_time": "04:00:00",
+          "details": [
+            {
+              "device": "laptop",
+              "price": 8000,
+              "changes": "Recover data from corrupted hard drive",
+              "notes": "Includes integrity verification"
+            },
+            {
+              "device": "desktop",
+              "price": 8000,
+              "changes": "Recover deleted files",
+              "notes": "Includes secure storage"
+            },
+            {
+              "device": "tablet",
+              "price": 6000,
+              "changes": "Recover lost tablet data",
+              "notes": "Includes backup creation"
+            },
+            {
+              "device": "smartphone",
+              "price": 6000,
+              "changes": "Recover deleted messages and media",
+              "notes": "Includes secure extraction"
+            },
+            {
+              "device": "printer",
+              "price": 3000,
+              "changes": "Recover printer settings",
+              "notes": "Includes configuration backup"
+            }
+          ]
+        },
+        {
+          "name": "Security Software Setup",
+          "description": "Install and configure security software",
+          "estimated_time": "01:30:00",
+          "details": [
+            {
+              "device": "laptop",
+              "price": 4000,
+              "changes": "Install antivirus and firewall",
+              "notes": "Includes 1-year license"
+            },
+            {
+              "device": "desktop",
+              "price": 4000,
+              "changes": "Configure security suite",
+              "notes": "Includes network protection"
+            },
+            {
+              "device": "tablet",
+              "price": 2500,
+              "changes": "Install mobile security app",
+              "notes": "Includes anti-theft setup"
+            },
+            {
+              "device": "smartphone",
+              "price": 2500,
+              "changes": "Setup device encryption",
+              "notes": "Includes secure backup"
+            },
+            {
+              "device": "printer",
+              "price": 2000,
+              "changes": "Configure printer security",
+              "notes": "Includes network encryption"
+            }
+          ]
+        },
+        {
+          "name": "Software Troubleshooting",
+          "description": "Diagnose and fix software issues",
+          "estimated_time": "01:00:00",
+          "details": [
+            {
+              "device": "laptop",
+              "price": 3000,
+              "changes": "Fix software crashes and errors",
+              "notes": "Includes performance optimization"
+            },
+            {
+              "device": "desktop",
+              "price": 3000,
+              "changes": "Resolve driver conflicts",
+              "notes": "Includes stability testing"
+            },
+            {
+              "device": "tablet",
+              "price": 2000,
+              "changes": "Fix app issues",
+              "notes": "Includes cache cleanup"
+            },
+            {
+              "device": "smartphone",
+              "price": 2000,
+              "changes": "Resolve system bugs",
+              "notes": "Includes performance check"
+            },
+            {
+              "device": "printer",
+              "price": 1500,
+              "changes": "Fix printer software issues",
+              "notes": "Includes test prints"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

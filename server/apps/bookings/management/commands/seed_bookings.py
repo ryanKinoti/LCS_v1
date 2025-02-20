@@ -1,16 +1,19 @@
 # apps/bookings/management/commands/seed_bookings.py
-from django.core.management.base import BaseCommand
-from django.db import transaction
-from faker import Faker
 import random
-
-from django.utils import timezone
 from datetime import datetime, timedelta
+from decimal import Decimal
+
+from django.contrib.contenttypes.models import ContentType
+from django.core.management.base import BaseCommand
+from django.db import transaction as t
+from django.utils import timezone
+from faker import Faker
 
 from apps.accounts.models import CustomerProfile, StaffProfile
+from apps.bookings.models import Booking, BookingParts
+from apps.finances.models import Transaction, PaymentRecord
 from apps.inventory.models import Device, DevicePart
 from apps.services.models import DetailedService
-from apps.bookings.models import Booking, BookingParts
 from utils.constants import BookingStatus, Finances, BUSINESS_HOURS
 
 faker = Faker()
@@ -30,22 +33,17 @@ class Command(BaseCommand):
     def generate_business_datetime(self, start_date=None):
         """Generate a timezone-aware datetime during business hours"""
         if not start_date:
-            # Generate a date within the last 30 days
             start_date = timezone.now() - timedelta(days=random.randint(0, 30))
 
-        # Ensure start_date is timezone-aware
         if timezone.is_naive(start_date):
             start_date = timezone.make_aware(start_date)
 
-        # Parse business hours
         start_time = datetime.strptime(BUSINESS_HOURS['start_time'], '%I:%M %p').time()
         end_time = datetime.strptime(BUSINESS_HOURS['end_time'], '%I:%M %p').time()
 
-        # Generate random time between business hours
         random_hour = random.randint(start_time.hour, end_time.hour - 1)
         random_minute = random.randint(0, 59)
 
-        # Create the datetime in the current timezone
         naive_datetime = start_date.replace(
             hour=random_hour,
             minute=random_minute,
@@ -53,10 +51,7 @@ class Command(BaseCommand):
             microsecond=0
         )
 
-        # Make it timezone-aware if it isn't already
-        if timezone.is_naive(naive_datetime):
-            return timezone.make_aware(naive_datetime)
-        return naive_datetime
+        return timezone.make_aware(naive_datetime) if timezone.is_naive(naive_datetime) else naive_datetime
 
     def generate_diagnosis(self, service, status):
         """Generate realistic diagnosis based on service and status"""
@@ -92,15 +87,54 @@ class Command(BaseCommand):
         }
 
         service_name = service.service.name
-        if service_name in diagnoses:
-            return random.choice(diagnoses[service_name])
-        return f"Standard diagnosis for {service_name}"
+        return random.choice(diagnoses.get(service_name, [f"Standard diagnosis for {service_name}"]))
+
+    def create_transaction(self, booking, amount, status):
+        """Create a transaction and payment record for a booking"""
+        content_type = ContentType.objects.get_for_model(Booking)
+
+        # Generate unique reference number
+        timestamp = datetime.now().strftime('%Y%m%d%H%M')
+        random_suffix = faker.random_number(digits=4)
+        reference_number = f"LCS_TRX{timestamp}{random_suffix}"
+
+        payment_method = random.choice([choice[0] for choice in Finances.PAYMENT_METHODS])
+
+        amount = Decimal(str(amount))
+
+        transaction = Transaction.objects.create(
+            reference_number=reference_number,
+            content_type=content_type,
+            object_id=booking.id,
+            transaction_type=Finances.BOOKING_PAYMENT,
+            total_amount=amount,
+            status=status,
+            payment_method=payment_method,
+            created_by=booking.customer.user,
+            notes=faker.text(max_nb_chars=100)
+        )
+
+        # Create payment records for paid or partially paid transactions
+        if status in [Finances.PAID, Finances.PARTIAL]:
+            amount_to_pay = amount if status == Finances.PAID else amount * Decimal('0.5')
+            PaymentRecord.objects.create(
+                transaction=transaction,
+                amount_paid=amount_to_pay,
+                payment_method=payment_method,
+                receipt_number=f"LCS_RCPT{faker.random_number(digits=8)}",
+                recorded_by=booking.customer.user,
+                notes=faker.text(max_nb_chars=100)
+            )
+            transaction.amount_paid = amount_to_pay
+            transaction.save()
+
+        return transaction
 
     def handle(self, *args, **options):
         self.stdout.write("Creating bookings...")
 
         try:
-            with transaction.atomic():
+            with t.atomic():
                 # Get existing data
                 customers = CustomerProfile.objects.all()
                 technicians = StaffProfile.objects.filter(role='technician')
@@ -129,8 +163,8 @@ class Command(BaseCommand):
                     customer_devices = devices.filter(customer=customer.user)
                     device = random.choice(customer_devices) if customer_devices.exists() else None
 
-                    # Generate booking datetime
-                    if random.random() < 0.7:  # 70% past bookings, 30% future
+                    # Determine booking datetime and status
+                    if random.random() < 0.7:  # 70% past bookings
                         booking_date = self.generate_business_datetime(
                             faker.date_time_between(start_date=past_date, end_date=timezone.now())
                         )
@@ -142,9 +176,9 @@ class Command(BaseCommand):
                         payment_status = random.choice([
                             Finances.PAID,
                             Finances.FAILED,
-                            Finances.REFUNDED
+                            Finances.PARTIAL
                         ])
-                    else:
+                    else:  # 30% future bookings
                         booking_date = self.generate_business_datetime(
                             faker.date_time_between(start_date=timezone.now(), end_date=future_date)
                         )
@@ -162,17 +196,15 @@ class Command(BaseCommand):
                         status=status,
                         scheduled_time=booking_date,
                         device=device,
-                        payment_status=payment_status,
                         diagnosis=self.generate_diagnosis(detailed_service, status),
                         notes=faker.text(max_nb_chars=200) if random.random() < 0.5 else ""
                     )
 
                     # Add parts to completed or in-progress bookings
+                    total_parts_cost = 0
                     if status in [BookingStatus.COMPLETED, BookingStatus.IN_PROGRESS]:
-                        # Add 1-3 parts to the booking
                         num_parts = random.randint(1, 3)
                         selected_parts = random.sample(list(parts), min(num_parts, len(parts)))
-                        total_parts_cost = 0
 
                         for part in selected_parts:
                             quantity = random.randint(1, min(3, part.quantity))
@@ -183,12 +215,13 @@ class Command(BaseCommand):
                             )
                             total_parts_cost += part.price * quantity
 
-                        booking.total_parts_cost = total_parts_cost
-                        booking.save()
+                    # Calculate total amount and create transaction
+                    total_amount = detailed_service.price + total_parts_cost
+                    transaction = self.create_transaction(booking, total_amount, payment_status)
 
                     created_bookings.append(booking)
 
-                # Calculate some statistics
+                # Print statistics
                 completed_bookings = sum(1 for b in created_bookings if b.status == BookingStatus.COMPLETED)
                 pending_bookings = sum(1 for b in created_bookings if b.status == BookingStatus.PENDING)
                 cancelled_bookings = sum(1 for b in created_bookings if b.status == BookingStatus.CANCELLED)

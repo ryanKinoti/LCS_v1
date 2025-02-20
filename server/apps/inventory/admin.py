@@ -93,7 +93,7 @@ class DevicePartAdmin(admin.ModelAdmin):
 
     def get_price(self, obj):
         """Display formatted price with currency symbol"""
-        return f"${obj.price}" if obj.price else "N/A"
+        return f"KES {obj.price}" if obj.price else "N/A"
 
     get_price.short_description = 'Price'
 

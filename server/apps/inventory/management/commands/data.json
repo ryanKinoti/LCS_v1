@@ -1,0 +1,271 @@
+{
+  "parts_data": {
+    "laptop_screens": [
+      {
+        "name": "15.6\" FHD Laptop Screen",
+        "model": "LP156WF6-SPB1",
+        "price": 12000,
+        "quantity_range": [
+          5,
+          15
+        ],
+        "warranty_months": 12,
+        "minimum_stock": 3
+      },
+      {
+        "name": "14\" HD Laptop Screen",
+        "model": "B140XTN07.2",
+        "price": 10000,
+        "quantity_range": [
+          5,
+          15
+        ],
+        "warranty_months": 12,
+        "minimum_stock": 3
+      },
+      {
+        "name": "13.3\" FHD Laptop Screen",
+        "model": "LQ133M1JW15",
+        "price": 14000,
+        "quantity_range": [
+          5,
+          15
+        ],
+        "warranty_months": 12,
+        "minimum_stock": 3
+      }
+    ],
+    "laptop_batteries": [
+      {
+        "name": "Laptop Battery - ThinkPad Compatible",
+        "model": "45N1001",
+        "price": 6500,
+        "quantity_range": [
+          8,
+          20
+        ],
+        "warranty_months": 6,
+        "minimum_stock": 5
+      },
+      {
+        "name": "Laptop Battery - Dell Compatible",
+        "model": "WDX0R",
+        "price": 7000,
+        "quantity_range": [
+          8,
+          20
+        ],
+        "warranty_months": 6,
+        "minimum_stock": 5
+      },
+      {
+        "name": "Laptop Battery - HP Compatible",
+        "model": "VI04",
+        "price": 6800,
+        "quantity_range": [
+          8,
+          20
+        ],
+        "warranty_months": 6,
+        "minimum_stock": 5
+      },
+      {
+        "name": "Laptop Battery - Acer Compatible",
+        "model": "AS16A5K",
+        "price": 6300,
+        "quantity_range": [
+          8,
+          20
+        ],
+        "warranty_months": 6,
+        "minimum_stock": 5
+      }
+    ],
+    "storage_drives": {
+      "ssd": [
+        {
+          "name": "1TB SSD NVMe",
+          "model": "Samsung 970 EVO",
+          "price": 15000,
+          "quantity_range": [
+            5,
+            12
+          ],
+          "warranty_months": 24,
+          "minimum_stock": 3
+        },
+        {
+          "name": "500GB SSD SATA",
+          "model": "Samsung 860 EVO",
+          "price": 8000,
+          "quantity_range": [
+            5,
+            12
+          ],
+          "warranty_months": 24,
+          "minimum_stock": 3
+        },
+        {
+          "name": "250GB SSD NVMe",
+          "model": "WD Black SN750",
+          "price": 5000,
+          "quantity_range": [
+            5,
+            12
+          ],
+          "warranty_months": 24,
+          "minimum_stock": 3
+        }
+      ],
+      "hdd": [
+        {
+          "name": "1TB HDD SATA",
+          "model": "WD Blue",
+          "price": 6000,
+          "quantity_range": [
+            5,
+            12
+          ],
+          "warranty_months": 24,
+          "minimum_stock": 3
+        },
+        {
+          "name": "2TB HDD SATA",
+          "model": "Seagate Barracuda",
+          "price": 8000,
+          "quantity_range": [
+            5,
+            12
+          ],
+          "warranty_months": 24,
+          "minimum_stock": 3
+        }
+      ]
+    },
+    "ram": [
+      {
+        "name": "8GB DDR4 RAM",
+        "model": "Crucial CT8G4DFS8266",
+        "price": 4500,
+        "quantity_range": [
+          10,
+          25
+        ],
+        "warranty_months": 12,
+        "minimum_stock": 8
+      },
+      {
+        "name": "16GB DDR4 RAM",
+        "model": "Crucial CT16G4DFD8266",
+        "price": 9000,
+        "quantity_range": [
+          8,
+          20
+        ],
+        "warranty_months": 12,
+        "minimum_stock": 5
+      },
+      {
+        "name": "4GB DDR4 RAM",
+        "model": "Kingston KVR26N19S6/4",
+        "price": 2500,
+        "quantity_range": [
+          10,
+          25
+        ],
+        "warranty_months": 12,
+        "minimum_stock": 8
+      }
+    ],
+    "printer_parts": [
+      {
+        "name": "Printer Maintenance Kit",
+        "model": "HP F2G76A",
+        "price": 12000,
+        "quantity_range": [
+          3,
+          8
+        ],
+        "warranty_months": 6,
+        "minimum_stock": 2
+      },
+      {
+        "name": "Printer Fuser Unit",
+        "model": "HP RM1-8508",
+        "price": 15000,
+        "quantity_range": [
+          3,
+          8
+        ],
+        "warranty_months": 6,
+        "minimum_stock": 2
+      }
+    ],
+    "desktop_parts": [
+      {
+        "name": "Power Supply Unit 650W",
+        "model": "Corsair RM650x",
+        "price": 11000,
+        "quantity_range": [
+          4,
+          10
+        ],
+        "warranty_months": 24,
+        "minimum_stock": 2
+      },
+      {
+        "name": "Power Supply Unit 750W",
+        "model": "EVGA SuperNOVA 750 G5",
+        "price": 13000,
+        "quantity_range": [
+          4,
+          10
+        ],
+        "warranty_months": 24,
+        "minimum_stock": 2
+      }
+    ]
+  },
+  "laptop_brands": [
+    {
+      "brand": "Dell",
+      "models": [
+        "Latitude 5420",
+        "XPS 13",
+        "Inspiron 15",
+        "Precision 5550",
+        "Vostro 3500"
+      ]
+    },
+    {
+      "brand": "Lenovo",
+      "models": [
+        "ThinkPad X1",
+        "IdeaPad 5",
+        "ThinkPad T14",
+        "Legion 5",
+        "Yoga Slim 7"
+      ]
+    },
+    {
+      "brand": "HP",
+      "models": [
+        "EliteBook 840",
+        "ProBook 450",
+        "Pavilion 15",
+        "Envy x360",
+        "Omen 15"
+      ]
+    },
+    {
+      "brand": "Acer",
+      "models": [
+        "Aspire 5",
+        "Swift 3",
+        "TravelMate P2",
+        "Predator Helios 300",
+        "Nitro 5"
+      ]
+    }
+  ]
+}

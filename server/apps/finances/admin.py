@@ -18,7 +18,7 @@ class PaymentRecordInline(admin.TabularInline):
         total = obj.transaction.payments.filter(
             payment_date__lte=obj.payment_date
         ).aggregate(models.Sum('amount_paid'))['amount_paid__sum'] or 0
-        return format_html('KES {:,.2f}', total)
+        return format_html('KES {0:,.2f}', total)
 
     get_running_total.short_description = 'Running Total'
 
@@ -86,17 +86,20 @@ class TransactionAdmin(admin.ModelAdmin):
     get_transaction_type.short_description = 'Type'
 
     def get_total_amount(self, obj):
-        return format_html('KES {:,.2f}', obj.total_amount)
+        formatted_price = f"KES {obj.total_amount:,.2f}"
+        return format_html("<span>{}</span>", formatted_price)
 
     get_total_amount.short_description = 'Total Amount'
 
     def get_amount_paid(self, obj):
-        return format_html('KES {:,.2f}', obj.amount_paid)
+        formatted_price = f"KES {obj.amount_paid:,.2f}"
+        return format_html("<span>{}</span>", formatted_price)
 
     get_amount_paid.short_description = 'Paid'
 
     def get_balance(self, obj):
-        return format_html('KES {:,.2f}', obj.balance_due)
+        formatted_price = f"KES {obj.balance_due:,.2f}"
+        return format_html("<span>{}</span>", formatted_price)
 
     get_balance.short_description = 'Balance'
 
@@ -129,27 +132,31 @@ class FinancialSummaryAdmin(admin.ModelAdmin):
                        'parts_revenue', 'outstanding_payments')
 
     def get_total_revenue(self, obj):
-        return format_html('KES {:,.2f}', obj.total_revenue)
+        formatted_price = f"KES {obj.total_revenue:,.2f}"
+        return format_html("<span>{}</span>", formatted_price)
 
     get_total_revenue.short_description = 'Total Revenue'
 
     def get_total_expenses(self, obj):
-        return format_html('KES {:,.2f}', obj.total_expenses)
+        formatted_price = f"KES {obj.total_expenses:,.2f}"
+        return format_html("<span>{}</span>", formatted_price)
 
     get_total_expenses.short_description = 'Total Expenses'
 
     def get_net_income(self, obj):
         net_income = obj.total_revenue - obj.total_expenses
         color = 'green' if net_income >= 0 else 'red'
+        formatted_price = f"KES {net_income:,.2f}"
         return format_html(
-            '<span style="color: {};">KES {:,.2f}</span>',
+            '<span style="color: {};">{}</span>',
             color,
-            net_income
+            formatted_price
         )
 
     get_net_income.short_description = 'Net Income'
 
     def get_outstanding_payments(self, obj):
-        return format_html('KES {:,.2f}', obj.outstanding_payments)
+        formatted_price = f"KES {obj.outstanding_payments:,.2f}"
+        return format_html("<span>{}</span>", formatted_price)
 
     get_outstanding_payments.short_description = 'Outstanding Payments'

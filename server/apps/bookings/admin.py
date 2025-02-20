@@ -82,7 +82,7 @@ class BookingAdmin(admin.ModelAdmin):
     list_display = (
         'job_card_number', 'get_customer_info', 'get_service_info', 'get_scheduled_time', 'get_status_badge',
         'get_payment_status', 'get_total_amount', 'get_parts_summary')
-    readonly_fields = ('created_at', 'updated_at', 'total_parts_cost', 'get_parts_details')
+    readonly_fields = ('created_at', 'updated_at', 'total_parts_cost', 'get_parts_details','get_payment_status')
     list_filter = (
         'status',
         PaymentStatusFilter,
@@ -116,7 +116,7 @@ class BookingAdmin(admin.ModelAdmin):
             'fields': (
                 'status',
                 'is_active',
-                'payment_status'
+                'get_payment_status'
             )
         }),
         ('Parts and Financial Details', {
