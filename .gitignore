@@ -6,3 +6,4 @@ server/.env
 server/db.sqlite3
 server/firebase_credentials.json
 LCS_project.txt
+LCS_pallet.txt

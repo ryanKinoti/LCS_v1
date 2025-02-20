@@ -15,6 +15,7 @@ class DeviceAdmin(admin.ModelAdmin):
         'brand',
         'model',
         'serial_number',
+        'price',
         'get_customer_name',
         'repair_status',
         'sale_status',
@@ -27,7 +28,7 @@ class DeviceAdmin(admin.ModelAdmin):
     # Organize fields into logical groups
     fieldsets = (
         ('Device Information', {
-            'fields': ('device_type', 'brand', 'model', 'serial_number')
+            'fields': ('device_type', 'brand', 'model', 'serial_number', 'price')
         }),
         ('Status Information', {
             'fields': ('repair_status', 'sale_status')

@@ -1,13 +1,12 @@
-# apps/bookings/serializers.py
-from rest_framework import serializers
-from django.utils import timezone
-from datetime import datetime
+from datetime import timezone, datetime
 
-from apps.accounts.serializers import CustomerProfileSerializer, StaffProfileSerializer
-from apps.services.serializers import DetailedServiceMinimalSerializer
+from rest_framework import serializers
+
+from apps.accounts.serializers import CustomerProfileMinimalSerializer, StaffProfileMinimalSerializer
+from apps.bookings.models import Booking, BookingParts
 from apps.inventory.serializers import DeviceMinimalSerializer, DevicePartMinimalSerializer
-from .models import Booking, BookingParts
-from utils.constants import BUSINESS_HOURS, BookingStatus, Finances
+from apps.services.serializers import DetailedServiceMinimalSerializer
+from utils.constants import Finances, BUSINESS_HOURS, BookingStatus
 
 
 class BookingPartsSerializer(serializers.ModelSerializer):
@@ -59,16 +58,6 @@ class BookingPartsSerializer(serializers.ModelSerializer):
                 "New bookings cannot be marked as paid"
             )
         return value
-
-
-class BookingMinimalSerializer(serializers.ModelSerializer):
-    """
-    Minimal serializer for booking references in other serializers.
-    """
-
-    class Meta:
-        model = Booking
-        fields = ['id', 'job_card_number', 'status', 'scheduled_time', 'payment_status']
 
 
 class BookingCreateUpdateSerializer(serializers.ModelSerializer):
@@ -177,8 +166,8 @@ class BookingDetailSerializer(serializers.ModelSerializer):
     Detailed serializer for viewing complete booking information.
     Includes all related data needed for frontend display.
     """
-    customer = CustomerProfileSerializer(read_only=True)
-    technician = StaffProfileSerializer(read_only=True)
+    customer = CustomerProfileMinimalSerializer(read_only=True)
+    technician = StaffProfileMinimalSerializer(read_only=True)
     detailed_service = DetailedServiceMinimalSerializer(read_only=True)
     device = DeviceMinimalSerializer(read_only=True)
     parts_used = BookingPartsSerializer(source='bookingparts_set', many=True, read_only=True)

@@ -3,6 +3,7 @@ import secrets
 
 from django.contrib.auth.base_user import AbstractBaseUser
 from django.contrib.auth.models import AbstractUser, BaseUserManager, PermissionsMixin
+from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -55,7 +56,7 @@ class CustomUserManager(BaseUserManager):
 
 class User(AbstractUser, PermissionsMixin):
     username = None
-    firebase_uid = models.CharField(max_length=128, blank=True, null=True, unique=True)
+    firebase_uid = models.CharField(max_length=128, blank=True, null=True, unique=True, db_index=True)
     email = models.EmailField(_('email address'), unique=True)
     first_name = models.CharField(_('first name'), max_length=150, null=True)
     last_name = models.CharField(_('last name'), max_length=150, null=True)
@@ -71,12 +72,28 @@ class User(AbstractUser, PermissionsMixin):
     def __str__(self):
         return f"{self.first_name} {self.last_name} <{self.email}>"
 
+    def clean(self):
+        super().clean()
+        # Additional validation logic
+        if self.email and not self.email.strip():
+            raise ValidationError('Email cannot be empty or just whitespace')
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        # Normalize email to lowercase
+        self.email = self.email.lower()
+        super().save(*args, **kwargs)
+
     def get_full_name(self):
         return f"{self.first_name} {self.last_name}"
 
     class Meta:
         verbose_name = _('User')
         verbose_name_plural = _('Users')
+        ordering = ['-date_joined']
+        indexes = [
+            models.Index(fields=['email', 'firebase_uid']),
+        ]
 
 
 class CustomerProfile(models.Model):
@@ -92,6 +109,17 @@ class CustomerProfile(models.Model):
 
     def __str__(self):
         return f"Customer Profile - {self.user.email} ({self.role})"
+
+    def clean(self):
+        super().clean()
+        if self.role == UserRoles.COMPANY and not self.company_name:
+            raise ValidationError(
+                {'company_name': _('Company name is required for company accounts.')}
+            )
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
 
     class Meta:
         verbose_name = _("Customer Profile")
@@ -112,6 +140,21 @@ class StaffProfile(models.Model):
 
     def __str__(self):
         return f"Staff Profile - {self.user.email} ({self.role})"
+
+    def clean(self):
+        super().clean()
+        if not isinstance(self.specializations, list):
+            raise ValidationError(
+                {'specializations': _('Specializations must be a list.')}
+            )
+        if not isinstance(self.availability, dict):
+            raise ValidationError(
+                {'availability': _('Availability must be a dictionary.')}
+            )
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
 
     class Meta:
         verbose_name = _("Staff Profile")

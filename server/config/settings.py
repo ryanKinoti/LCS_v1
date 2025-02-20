@@ -7,10 +7,21 @@ from config.logs_config import ColorFormatter
 
 load_dotenv()
 
+# Base Settings
 BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('SECRET_KEY')
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost').split(',')
+LOGS_DIR = os.path.join(BASE_DIR, 'logs')
+os.makedirs(LOGS_DIR, exist_ok=True)
+
+AUTH_LOGS = os.path.join(LOGS_DIR, 'auth')
+ERROR_LOGS = os.path.join(LOGS_DIR, 'errors')
+INFO_LOGS = os.path.join(LOGS_DIR, 'info')
+FIREBASE_LOGS = os.path.join(LOGS_DIR, 'firebase')
+
+for directory in [AUTH_LOGS, ERROR_LOGS, INFO_LOGS, FIREBASE_LOGS]:
+    os.makedirs(directory, exist_ok=True)
 
 # Application Settings
 INSTALLED_APPS = [
@@ -165,133 +176,11 @@ REST_FRAMEWORK = {
     ],
     'EXCEPTION_HANDLER': 'rest_framework.views.exception_handler',
     'NON_FIELD_ERRORS_KEY': 'error',
+    'DEFAULT_THROTTLE_CLASSES': [
+        'utils.throttling.UserActionThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '5/minute',
+        'user': '60/minute',
+    }
 }
-
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'formatters': {
-        'colored': {
-            '()': ColorFormatter,
-            'format': '[{asctime}] {levelname} {name}: {message}',
-            'style': '{',
-            'datefmt': '%Y-%m-%d %H:%M:%S'
-        },
-        'verbose': {
-            'format': '[{asctime}] {levelname} {name}: {message}',
-            'style': '{',
-            'datefmt': '%Y-%m-%d %H:%M:%S'
-        },
-    },
-    'filters': {
-        'require_debug_true': {
-            '()': 'django.utils.log.RequireDebugTrue',
-        },
-        'require_debug_false': {
-            '()': 'django.utils.log.RequireDebugFalse',
-        },
-        'exclude_django_debug': {
-            '()': 'django.utils.log.CallbackFilter',
-            'callback': lambda record: not (
-                    record.name.startswith('django.') or
-                    record.name.startswith('asyncio') or
-                    record.name.startswith('PIL') or
-                    'DEBUG' in record.msg or
-                    'GET' in record.msg or
-                    'POST' in record.msg
-            )
-        }
-    },
-    'handlers': {
-        'console': {
-            'level': 'DEBUG',
-            'class': 'logging.StreamHandler',
-            'formatter': 'colored',
-            'filters': ['require_debug_true', 'exclude_django_debug'],
-        },
-        'file_debug': {
-            'level': 'DEBUG',
-            'class': 'logging.FileHandler',
-            'filename': 'logs/debug.log',
-            'formatter': 'verbose',
-            'filters': ['require_debug_true'],
-        },
-        'file_info': {
-            'level': 'INFO',
-            'class': 'logging.FileHandler',
-            'filename': 'logs/info.log',
-            'formatter': 'verbose',
-        },
-        'file_error': {
-            'level': 'ERROR',
-            'class': 'logging.FileHandler',
-            'filename': 'logs/error.log',
-            'formatter': 'verbose',
-        },
-    },
-    'loggers': {
-        '': {  # Root logger
-            'handlers': ['console', 'file_info', 'file_error'],
-            'level': 'INFO',
-            'propagate': True,
-        },
-        'apps': {  # Your apps logger
-            'handlers': ['console', 'file_debug', 'file_info', 'file_error'],
-            'level': 'DEBUG',
-            'propagate': False,
-        },
-        # Specific app loggers
-        'apps.accounts': {
-            'handlers': ['console', 'file_info', 'file_error'],
-            'level': 'INFO',
-            'propagate': False,
-        },
-        'apps.bookings': {
-            'handlers': ['console', 'file_info', 'file_error'],
-            'level': 'INFO',
-            'propagate': False,
-        },
-        'apps.inventory': {
-            'handlers': ['console', 'file_info', 'file_error'],
-            'level': 'INFO',
-            'propagate': False,
-        },
-        'apps.services': {
-            'handlers': ['console', 'file_info', 'file_error'],
-            'level': 'INFO',
-            'propagate': False,
-        },
-        'apps.notifications': {
-            'handlers': ['console', 'file_info', 'file_error'],
-            'level': 'INFO',
-            'propagate': False,
-        },
-        'apps.finance': {
-            'handlers': ['console', 'file_info', 'file_error'],
-            'level': 'INFO',
-            'propagate': False,
-        },
-        'django': {  # Django's internal logger
-            'handlers': ['file_info', 'file_error'],  # Removed console handler
-            'level': 'INFO',
-            'propagate': False,
-        },
-        'django.server': {  # Django dev server logger
-            'handlers': ['file_info'],  # Removed console handler
-            'level': 'INFO',
-            'propagate': False,
-        },
-        'django.request': {  # Log all HTTP 500 errors
-            'handlers': ['file_error'],
-            'level': 'ERROR',
-            'propagate': False,
-        },
-        'django.db.backends': {  # Database queries
-            'handlers': ['file_debug'],
-            'level': 'DEBUG',
-            'propagate': False,
-            'filters': ['require_debug_true'],
-        },
-    },
-}
-

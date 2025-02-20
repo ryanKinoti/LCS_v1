@@ -1,19 +1,22 @@
 import logging
+from logging import exception
 
 from django.contrib.auth import get_user_model, login
 from django.db import transaction
 from django.middleware.csrf import get_token
 from rest_framework import generics, serializers, status, viewsets
 from rest_framework.decorators import action, api_view, permission_classes
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from utils.firebase_conn import firebase_conn
 from .models import StaffProfile
+from .permissions import IsAdminUser
 from .serializers import (
     RegisterSerializer, CustomerProfileSerializer, StaffProfileSerializer, PasswordChangeSerializer,
     UserSerializer, UserUpdateSerializer, AdminDashboardSerializer,
-    StaffDashboardSerializer, CustomerDashboardSerializer
+    StaffDashboardSerializer, CustomerDashboardSerializer, UserMinimalSerializer
 )
 
 User = get_user_model()
@@ -30,8 +33,10 @@ class RegisterView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
     permission_classes = [AllowAny]
 
+    @transaction.atomic
     def perform_create(self, serializer):
-        with transaction.atomic():
+        logger.info("Starting user registration process")
+        try:
             user = serializer.save()
             profile_type = self.request.data.get('profile_type', 'customer').lower()
 
@@ -42,7 +47,7 @@ class RegisterView(generics.CreateAPIView):
                 )
             # 3. Prepare profile data
             profile_data = self.request.data.copy()
-            profile_data['user_email'] = user.email  # Link to the new user needed by the customer and staff serializers
+            profile_data['user_email'] = user.email
 
             # 4. Staff-specific logic
             if profile_type == 'staff':
@@ -50,35 +55,63 @@ class RegisterView(generics.CreateAPIView):
                 user.save(update_fields=['is_staff'])
 
             # 5. Use profile serializer to validate and create the profile
-            profile_serializer_class = CustomerProfileSerializer if profile_type == 'customer' else StaffProfileSerializer
-            profile_serializer = profile_serializer_class(data=profile_data, context=self.get_serializer_context())
+            if profile_type == 'customer':
+                profile_serializer = CustomerProfileSerializer(
+                    data=profile_data,
+                    context=self.get_serializer_context()
+                )
+            elif profile_type == 'staff':
+                profile_serializer = StaffProfileSerializer(
+                    data=profile_data,
+                    context=self.get_serializer_context()
+                )
+            else:
+                raise ValidationError({"profile_type": "Invalid profile type"})
 
-            if not profile_serializer.is_valid():
-                # Log profile validation errors
-                print("Profile validation errors:", profile_serializer.errors)
-                raise serializers.ValidationError(profile_serializer.errors)
-            profile_serializer.save()
+            if profile_serializer.is_valid():
+                profile = profile_serializer.save(user=user)
+                logger.info(f"Successfully created {profile_type} profile for {user.email}")
 
-            response_data = {
-                'message': f'Successfully created {profile_type} account',
-                'data': {
-                    'login_token': user.customer_profile.login_token if profile_type == 'customer' else user.staff_profile.login_token,
-                    'email': user.email,
-                }
-            }
-            return Response(response_data, status=status.HTTP_201_CREATED)
+                return Response({
+                    'message': f'Successfully created {profile_type} account',
+                    'data': {
+                        'email': user.email,
+                        'profile_type': profile_type,
+                        'login_token': profile.login_token
+                    }
+                }, status=status.HTTP_201_CREATED)
+            else:
+                logger.error(f"Profile validation failed: {profile_serializer.errors}")
+                raise ValidationError(profile_serializer.errors)
+        except Exception as e:
+            logger.error(f"Registration failed: {str(e)}")
+            raise ValidationError(str(e))
 
 
 class UserViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.all()
     permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        """
+        Filter queryset based on user role:
+
+        - Superusers can see all users
+        - Staff can see customers
+        - Customers can only see themselves
+        """
+        user = self.request.user
+        if user.is_superuser:
+            return User.objects.all()
+        elif user.is_staff:
+            return User.objects.filter(customer_profile__isnull=False)
+        return User.objects.filter(id=user.id)
 
     def get_serializer_class(self):
         if self.action == 'create':
             return RegisterSerializer
-        elif self.action == 'update' or self.action == 'partial_update':
+        elif self.action in ['update', 'partial_update']:
             return UserUpdateSerializer
-        return UserSerializer
+        return UserMinimalSerializer
 
     def get_permissions(self):
         if self.action in ['create']:
@@ -116,36 +149,52 @@ class UserViewSet(viewsets.ModelViewSet):
         }
         return CustomerDashboardSerializer(data).data
 
-    @action(detail=False, methods=['GET'])
-    def me(self, request):
-        user = request.user
-        logger.info(f"\n=== Processing /me request for {user.email} ===")
-
-        response_data = {
-            'user': UserSerializer(user, context={'request': request}).data,
-            'role': self._determine_user_role(user)
-        }
-
-        if user.is_superuser:
-            logger.info("Getting admin dashboard data")
-            response_data['dashboard'] = self.get_admin_data(request)
-        elif user.is_staff:
-            logger.info("Getting staff dashboard data")
-            response_data['dashboard'] = self.get_staff_data(request)
-        else:
-            logger.info("Getting customer dashboard data")
-            response_data['dashboard'] = self.get_customer_data(request)
-
-        logger.info(f"Returning data for {user.email}")
-        return Response(response_data)
-
     def _determine_user_role(self, user):
-        """Helper method to determine user role"""
         if user.is_superuser:
             return 'admin'
         elif user.is_staff:
             return 'staff'
         return 'customer'
+
+    @action(detail=False, methods=['GET'])
+    def me(self, request):
+        user = request.user
+        logger.info(f"\n=== Processing /me request for {user.email} ===")
+        try:
+            context = {'request': request}
+            if request.query_params.get('detail') == 'full':
+                serializer_class = UserSerializer
+            else:
+                serializer_class = UserMinimalSerializer
+            response_data = {
+                'user': serializer_class(user, context=context).data,
+                'role': self._determine_user_role(user)
+            }
+            if user.is_superuser:
+                logger.info("Getting admin dashboard data")
+                response_data['dashboard'] = self.get_admin_data(request)
+            elif user.is_staff:
+                logger.info("Getting staff dashboard data")
+                response_data['dashboard'] = self.get_staff_data(request)
+            else:
+                logger.info("Getting customer dashboard data")
+                response_data['dashboard'] = self.get_customer_data(request)
+
+            logger.info(f"Returning data for {user.email}")
+            return Response(response_data)
+        except Exception as e:
+            logger.error(f"Error fetching dashboard data: {str(e)}")
+            return Response(
+                {'error': 'Failed to fetch dashboard data'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    @action(detail=True, methods=['POST'], permission_classes=[IsAdminUser])
+    def toggle_active(self, request, pk=None):
+        user = self.get_object()
+        user.is_active = not user.is_active
+        user.save()
+        return Response({'status': 'success', 'is_active': user.is_active})
 
     @action(detail=True, methods=['POST'])
     def change_password(self, request, pk=None):
@@ -164,7 +213,6 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-# Then our main admin session view
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def admin_session(request):

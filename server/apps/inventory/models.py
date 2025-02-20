@@ -15,10 +15,10 @@ class Device(models.Model):
     brand = models.CharField(max_length=100)
     model = models.CharField(max_length=100)
     serial_number = models.CharField(max_length=100, unique=True)
+    price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     repair_status = models.CharField(
         max_length=20,
         choices=Devices.DEVICE_REPAIR_STATUSES,
-        default=Devices.IN_PROGRESS,
         null=True,
         blank=True
     )

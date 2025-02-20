@@ -1,32 +1,12 @@
-# apps/inventory/serializers.py
 from rest_framework import serializers
-from apps.accounts.serializers import CustomerProfileSerializer, StaffProfileSerializer
+
+from apps.accounts.serializers import CustomerProfileMinimalSerializer, StaffProfileMinimalSerializer
 from apps.bookings.serializers import BookingMinimalSerializer
-from .models import Device, DevicePart, PartMovement, DeviceRepairHistory
+from apps.inventory.models import Device, DevicePart, DeviceRepairHistory, PartMovement
+from apps.inventory.serializers import DevicePartMinimalSerializer, DeviceMinimalSerializer
 
 
-class DevicePartMinimalSerializer(serializers.ModelSerializer):
-    """
-    A minimal serializer for DevicePart model, used for nested relationships
-    and list views where full details aren't necessary.
-    """
-
-    class Meta:
-        model = DevicePart
-        fields = ['id', 'name', 'model', 'serial_number', 'status', 'quantity']
-
-
-class DeviceMinimalSerializer(serializers.ModelSerializer):
-    """
-    A minimal serializer for Device model, used for nested relationships
-    and list views where full details aren't necessary.
-    """
-
-    class Meta:
-        model = Device
-        fields = ['id', 'device_type', 'brand', 'model', 'serial_number', 'repair_status']
-
-
+# creation of records for creating new devices, parts, part movements, and repair history records
 class DeviceCreateSerializer(serializers.ModelSerializer):
     """
     Dedicated serializer for creating new devices. Includes validation
@@ -45,23 +25,6 @@ class DeviceCreateSerializer(serializers.ModelSerializer):
         if Device.objects.filter(serial_number=value).exists():
             raise serializers.ValidationError("A device with this serial number already exists.")
         return value
-
-
-class DeviceDetailSerializer(serializers.ModelSerializer):
-    """
-    Comprehensive device serializer for detailed views. Includes related
-    parts and customer information.
-    """
-    customer = CustomerProfileSerializer(read_only=True)
-    parts = DevicePartMinimalSerializer(many=True, read_only=True)
-
-    class Meta:
-        model = Device
-        fields = [
-            'id', 'customer', 'device_type', 'brand', 'model',
-            'serial_number', 'repair_status', 'sale_status',
-            'parts', 'created_at'
-        ]
 
 
 class DevicePartCreateSerializer(serializers.ModelSerializer):
@@ -94,26 +57,6 @@ class DevicePartCreateSerializer(serializers.ModelSerializer):
             )
 
         return data
-
-
-class DevicePartDetailSerializer(serializers.ModelSerializer):
-    """
-    Comprehensive part serializer for detailed views. Includes the associated
-    device information if applicable.
-    """
-    customer_laptop = DeviceMinimalSerializer(read_only=True)
-    is_low_stock = serializers.SerializerMethodField()
-
-    class Meta:
-        model = DevicePart
-        fields = [
-            'id', 'customer_laptop', 'name', 'model', 'serial_number',
-            'price', 'quantity', 'status', 'warranty_months',
-            'minimum_stock', 'created_at'
-        ]
-
-    def get_is_low_stock(self, obj):
-        return obj.quantity <= obj.minimum_stock
 
 
 class PartMovementCreateSerializer(serializers.ModelSerializer):
@@ -177,6 +120,44 @@ class DeviceRepairHistoryCreateSerializer(serializers.ModelSerializer):
         return data
 
 
+# serializers for detailed views of devices, parts, and repair history records
+class DeviceDetailSerializer(serializers.ModelSerializer):
+    """
+    Comprehensive device serializer for detailed views. Includes related
+    parts and customer information.
+    """
+    customer = CustomerProfileMinimalSerializer(read_only=True)
+    parts = DevicePartMinimalSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Device
+        fields = [
+            'id', 'customer', 'device_type', 'brand', 'model',
+            'serial_number', 'repair_status', 'sale_status',
+            'parts', 'created_at'
+        ]
+
+
+class DevicePartDetailSerializer(serializers.ModelSerializer):
+    """
+    Comprehensive part serializer for detailed views. Includes the associated
+    device information if applicable.
+    """
+    customer_laptop = DeviceMinimalSerializer(read_only=True)
+    is_low_stock = serializers.SerializerMethodField()
+
+    class Meta:
+        model = DevicePart
+        fields = [
+            'id', 'customer_laptop', 'name', 'model', 'serial_number',
+            'price', 'quantity', 'status', 'warranty_months',
+            'minimum_stock', 'created_at'
+        ]
+
+    def get_is_low_stock(self, obj):
+        return obj.quantity <= obj.minimum_stock
+
+
 class DeviceRepairHistoryDetailSerializer(serializers.ModelSerializer):
     """
     Comprehensive repair history serializer for detailed views.
@@ -185,7 +166,7 @@ class DeviceRepairHistoryDetailSerializer(serializers.ModelSerializer):
     device = DeviceMinimalSerializer(read_only=True)
     booking = BookingMinimalSerializer(read_only=True)
     parts_replaced = DevicePartMinimalSerializer(many=True, read_only=True)
-    technician = StaffProfileSerializer(read_only=True)
+    technician = StaffProfileMinimalSerializer(read_only=True)
 
     class Meta:
         model = DeviceRepairHistory
