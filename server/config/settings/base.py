@@ -1,27 +1,15 @@
 import os
 from pathlib import Path
-from datetime import timedelta
+
 from dotenv import load_dotenv
 
-from config.logs_config import ColorFormatter
-
-load_dotenv()
+from config.settings.logging import LOGGING
 
 # Base Settings
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+env_path = BASE_DIR / '.env'
+load_dotenv(dotenv_path=env_path)
 SECRET_KEY = os.getenv('SECRET_KEY')
-DEBUG = os.getenv('DEBUG', 'False') == 'True'
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost').split(',')
-LOGS_DIR = os.path.join(BASE_DIR, 'logs')
-os.makedirs(LOGS_DIR, exist_ok=True)
-
-AUTH_LOGS = os.path.join(LOGS_DIR, 'auth')
-ERROR_LOGS = os.path.join(LOGS_DIR, 'errors')
-INFO_LOGS = os.path.join(LOGS_DIR, 'info')
-FIREBASE_LOGS = os.path.join(LOGS_DIR, 'firebase')
-
-for directory in [AUTH_LOGS, ERROR_LOGS, INFO_LOGS, FIREBASE_LOGS]:
-    os.makedirs(directory, exist_ok=True)
 
 # Application Settings
 INSTALLED_APPS = [
@@ -51,10 +39,11 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
 
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'config.firebase.FirebaseAuthenticationMiddleware',
 
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+
+    'config.firebase.FirebaseAuthenticationMiddleware',
 ]
 
 FIREBASE_MIDDLEWARE_EXEMPT_URLS = [
@@ -124,49 +113,7 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'accounts.User'
 
-# CORS Settings
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",  # Your React dev server
-    "http://127.0.0.1:5173",
-]
-CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOW_METHODS = [
-    'DELETE',
-    'GET',
-    'OPTIONS',
-    'PATCH',
-    'POST',
-    'PUT',
-]
-CORS_ALLOW_HEADERS = [
-    'accept',
-    'accept-encoding',
-    'authorization',
-    'content-type',
-    'dnt',
-    'origin',
-    'user-agent',
-    'x-csrftoken',
-    'x-requested-with',
-]
-
-# Session Settings
-SESSION_COOKIE_AGE = 86400
-SESSION_COOKIE_HTTPONLY = True
-SESSION_COOKIE_SECURE = False  # Set to True in production
-SESSION_COOKIE_SAMESITE = 'Lax'
-SESSION_COOKIE_DOMAIN = '127.0.0.1' if DEBUG else None
-
-# CSRF Settings
-CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "http://127.0.0.1:8000"
-]
-CSRF_USE_SESSIONS = True
-CSRF_COOKIE_DOMAIN = '127.0.0.1' if DEBUG else None
-
-# Firebase Settings
+# Firebase & REST Settings
 FIREBASE_CREDENTIALS = os.path.join(BASE_DIR, "firebase_credentials.json")
 FIREBASE_AUTH_CHECK_REVOKED = True
 

@@ -2,6 +2,7 @@ import logging
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
+from django.urls import resolve
 from django.utils.functional import SimpleLazyObject
 from firebase_admin import auth
 from rest_framework.exceptions import AuthenticationFailed
@@ -31,8 +32,11 @@ class FirebaseAuthenticationMiddleware:
         Main middleware method that processes each request.
         Uses SimpleLazyObject to defer user loading until needed.
         """
-        path = request.path
-        if any(path.startswith(exempt_url) for exempt_url in getattr(settings, 'FIREBASE_MIDDLEWARE_EXEMPT_URLS', [])):
+        resolved = resolve(request.path)
+        if resolved.app_name == 'admin' or request.path.startswith('/admin/'):
+            return self.get_response(request)
+
+        if any(request.path.startswith(exempt_url) for exempt_url in getattr(settings, 'FIREBASE_MIDDLEWARE_EXEMPT_URLS', [])):
             return self.get_response(request)
 
         request.user = SimpleLazyObject(lambda: self._get_user(request))
@@ -53,6 +57,9 @@ class FirebaseAuthenticationMiddleware:
         Returns authenticated user or raises AuthenticationFailed.
         """
         logger.info("\n=== Firebase Authentication Process ===")
+
+        if hasattr(request, '_cached_user') and request._cached_user.is_authenticated:
+            return request._cached_user
 
         try:
             token = self._get_token_from_header(request)
