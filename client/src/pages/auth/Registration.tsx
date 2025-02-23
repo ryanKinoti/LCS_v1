@@ -14,8 +14,9 @@ import {RegisterCredentials} from "@/hooks/auth";
 const RegistrationPage = () => {
 
     const navigate = useNavigate();
-    const {register, loading} = useAuth();
+    const {register, status} = useAuth();
     const [error, setError] = useState<string>('');
+    const isLoading = status === 'authenticating';
 
     const [formData, setFormData] = useState<RegisterCredentials>({
         first_name: '',
@@ -121,7 +122,7 @@ const RegistrationPage = () => {
                                             name="first_name"
                                             value={formData.first_name}
                                             onChange={handleChange}
-                                            disabled={loading}/>
+                                            disabled={isLoading}/>
                                     </div>
                                     <div className="relative">
                                         <User className="absolute left-3 top-3 h-5 w-5 text-gray-400"/>
@@ -132,7 +133,7 @@ const RegistrationPage = () => {
                                             name="last_name"
                                             value={formData.last_name}
                                             onChange={handleChange}
-                                            disabled={loading}/>
+                                            disabled={isLoading}/>
                                     </div>
                                 </div>
 
@@ -147,7 +148,7 @@ const RegistrationPage = () => {
                                             name="email"
                                             value={formData.email}
                                             onChange={handleChange}
-                                            disabled={loading}/>
+                                            disabled={isLoading}/>
                                     </div>
                                     <div className="relative">
                                         <Phone className="absolute left-3 top-3 h-5 w-5 text-gray-400"/>
@@ -158,7 +159,7 @@ const RegistrationPage = () => {
                                             name="phone_number"
                                             value={formData.phone_number}
                                             onChange={handleChange}
-                                            disabled={loading}/>
+                                            disabled={isLoading}/>
                                     </div>
                                 </div>
 
@@ -187,6 +188,7 @@ const RegistrationPage = () => {
                                     </Select>
                                 </div>
 
+                                {/* Account Type */}
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="relative">
                                         <Label className="text-base">Account Type</Label>
@@ -194,7 +196,8 @@ const RegistrationPage = () => {
                                             defaultValue="client"
                                             value={formData.role}
                                             onValueChange={handleRoleChange}
-                                            className="grid grid-cols-2 gap-4">
+                                            className="grid grid-cols-2 gap-4"
+                                            disabled={isLoading}>
                                             <div className="flex items-center space-x-2">
                                                 <RadioGroupItem
                                                     value="client"
@@ -232,7 +235,8 @@ const RegistrationPage = () => {
                                             className="pl-10 py-2 w-full bg-white"
                                             name="password"
                                             value={formData.password}
-                                            onChange={handleChange}/>
+                                            onChange={handleChange}
+                                            disabled={isLoading}/>
                                     </div>
                                     <div className="relative">
                                         <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400"/>
@@ -242,7 +246,8 @@ const RegistrationPage = () => {
                                             className="pl-10 py-2 w-full bg-white"
                                             name="confirm_password"
                                             value={formData.confirm_password}
-                                            onChange={handleChange}/>
+                                            onChange={handleChange}
+                                            disabled={isLoading}/>
                                     </div>
                                 </div>
 
@@ -255,7 +260,7 @@ const RegistrationPage = () => {
                                             value={formData.company_name}
                                             onChange={handleChange}
                                             className="pl-10 py-2 w-full bg-white"
-                                            disabled={loading}
+                                            disabled={isLoading}
                                         />
                                     </div>
                                 )}
@@ -263,8 +268,9 @@ const RegistrationPage = () => {
                                 {/* Sign-Up Button */}
                                 <Button
                                     type="submit"
-                                    className="w-full bg-[#0066FF] text-white py-6 rounded-lg hover:bg-blue-700">
-                                    Sign Up
+                                    className="w-full bg-[#0066FF] text-white py-6 rounded-lg hover:bg-blue-700"
+                                    disabled={isLoading}>
+                                    {isLoading ? 'Signing up...' : 'Sign Up'}
                                 </Button>
                                 {error && (
                                     <p className="text-red-500 text-center mt-2">{error}</p>

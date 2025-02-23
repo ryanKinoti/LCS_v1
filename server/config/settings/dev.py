@@ -6,11 +6,11 @@ ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '127.0.0.1').split(',')
 # Logging Settings
 LOGS_DIR = os.path.join(BASE_DIR, 'logs')
 os.makedirs(LOGS_DIR, exist_ok=True)
-APP_LOGS = os.path.join(LOGS_DIR, 'app')
-DJANGO_LOGS = os.path.join(LOGS_DIR, 'django')
-ERROR_LOGS = os.path.join(LOGS_DIR, 'errors')
 
-for directory in [APP_LOGS, DJANGO_LOGS, ERROR_LOGS]:
+ERROR_LOGS = os.path.join(LOGS_DIR, 'errors')
+TRACEBACK_LOG_DIR = os.path.join(ERROR_LOGS, 'tracebacks')
+
+for directory in [LOGS_DIR, ERROR_LOGS, TRACEBACK_LOG_DIR]:
     os.makedirs(directory, exist_ok=True)
 
 # CORS Settings

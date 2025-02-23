@@ -1,55 +1,75 @@
+from .log_config import ColorFormatter, ErrorTracebackHandler
+import logging
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'formatters': {
         'standard': {
-            'format': '[%(asctime)s] %(levelname)s [%(name)s:%(lineno)s] %(message)s',
-            'datefmt': '%d/%b/%Y %H:%M:%S'
+            '()': 'config.settings.log_config.ColorFormatter',
+            'use_colors': False
         },
+        'console': {
+            '()': 'config.settings.log_config.ColorFormatter',
+            'use_colors': True
+        },
+    },
+    'filters': {
+        'exclude_errors': {
+            '()': 'django.utils.log.CallbackFilter',
+            'callback': lambda record: record.levelno < logging.ERROR
+        }
     },
     'handlers': {
         'console': {
             'level': 'INFO',
             'class': 'logging.StreamHandler',
-            'formatter': 'standard',
-            'filters': [],
+            'formatter': 'console',
         },
-        'app_file': {
+        'apps_file': {
             'level': 'INFO',
             'class': 'logging.handlers.RotatingFileHandler',
-            'filename': 'logs/app/app.log',
-            'maxBytes': 1024 * 1024 * 5,  # 5 MB
+            'filename': 'logs/apps.log',
+            'maxBytes': 1024 * 1024 * 5,
             'backupCount': 5,
             'formatter': 'standard',
+            'filters': ['exclude_errors'],
         },
         'django_file': {
             'level': 'INFO',
             'class': 'logging.handlers.RotatingFileHandler',
-            'filename': 'logs/django/django.log',
-            'maxBytes': 1024 * 1024 * 5,  # 5 MB
+            'filename': 'logs/django.log',
+            'maxBytes': 1024 * 1024 * 5,
             'backupCount': 5,
             'formatter': 'standard',
+            'filters': ['exclude_errors'],
         },
-        'error_file': {
+        'error_handler': {
             'level': 'ERROR',
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': 'logs/errors/errors.log',
-            'maxBytes': 1024 * 1024 * 5,  # 5 MB
-            'backupCount': 5,
-            'formatter': 'standard',
+            '()': 'config.settings.log_config.ErrorTracebackHandler',
+            'base_dir': 'logs'
         }
     },
     'loggers': {
-        'django': {
-            'handlers': ['console'],
-            'level': 'INFO',
-            'propagate': True,
-        },
         'apps': {
-            'handlers': ['console'],
+            'handlers': ['console', 'apps_file', 'error_handler'],
             'level': 'INFO',
-            'propagate': True,
-        }
+            'propagate': False,
+        }, 'django': {
+            'handlers': ['console', 'django_file'],
+            'level': 'INFO',
+            'propagate': False
+        },
+        'django.db.backends': {
+            'handlers': ['django_file'],
+            'level': 'INFO',
+            'propagate': False
+        },
+        **{logger_name: {
+            'handlers': ['console', 'django_file', 'error_handler'],
+            'level': 'INFO',
+            'propagate': False,
+        } for logger_name in ('django.request', 'django.server')},
     },
     'root': {
         'level': 'INFO',

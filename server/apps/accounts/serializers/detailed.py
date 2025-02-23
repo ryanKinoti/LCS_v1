@@ -204,6 +204,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         style={'input_type': 'password'},
         min_length=8
     )
+    profile_type = serializers.ChoiceField(choices=['staff', 'customer'], write_only=True)
 
     class Meta:
         model = User
