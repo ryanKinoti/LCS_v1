@@ -29,7 +29,7 @@ import {
     createDevice,
     initiateBooking,
     getDetailedServices, DevicePartFormData, addDeviceParts
-} from '@/hooks/bookings'
+} from '@/hooks/bookings.ts'
 
 const customerTypeSchema = z.object({
     type: z.enum(["existing", "new"]),

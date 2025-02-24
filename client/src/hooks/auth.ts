@@ -1,4 +1,4 @@
-import api, {ApiError} from '@/hooks/api';
+import api, {ApiError} from '@/hooks/api.ts';
 import {signInWithEmailAndPassword} from "@firebase/auth";
 import {User as FirebaseUser} from 'firebase/auth';
 import {auth} from '@/hooks/firebase';
@@ -17,7 +17,7 @@ export interface RegisterCredentials {
     last_name: string;
     phone_number?: string;
     preferred_contact?: string;
-    profile_type: 'customer' | 'staff';
+    profile_type: 'customer';
     role: string;
     company_name?: string;
 }

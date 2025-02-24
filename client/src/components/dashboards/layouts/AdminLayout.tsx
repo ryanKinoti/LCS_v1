@@ -26,7 +26,7 @@ import { ToastAction } from "@/components/ui/toast"
 import logoMain from "@/assets/lcs_main_logo.png";
 import {Button} from "@/components/ui/button";
 import {Link, useNavigate} from "react-router-dom";
-import {AuthService} from "@/hooks/auth"
+import {AuthService} from "@/hooks/auth.ts"
 import {useAuth} from "@/contexts/AuthContext.tsx";
 
 interface AdminLayoutProps {

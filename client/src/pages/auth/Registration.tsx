@@ -9,7 +9,7 @@ import {Label} from "@/components/ui/label"
 import {User, Mail, Phone, Lock} from 'lucide-react'
 import logoMain from "@/assets/lcs_main_logo.png"
 import {useAuth} from "@/contexts/AuthContext.tsx";
-import {RegisterCredentials} from "@/hooks/auth";
+import {RegisterCredentials} from "@/hooks/auth.ts";
 
 const RegistrationPage = () => {
 

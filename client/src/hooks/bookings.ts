@@ -1,4 +1,4 @@
-import api from '@/hooks/api';
+import api from '@/hooks/api.ts';
 import axios from "axios";
 
 // BookingList Interfaces

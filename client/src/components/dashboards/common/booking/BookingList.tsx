@@ -43,7 +43,7 @@ import {
     getBookingDetailById,
     updateBooking,
     deleteBooking
-} from '@/hooks/bookings';
+} from '@/hooks/bookings.ts';
 import {cn} from "@/lib/utils";
 
 interface InfoSectionProps {

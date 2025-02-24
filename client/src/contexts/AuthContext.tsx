@@ -1,7 +1,7 @@
 import {createContext, useContext, useEffect, useState, ReactNode, useCallback} from 'react';
 import {auth} from '@/hooks/firebase';
 import {User as FirebaseUser} from 'firebase/auth';
-import {AuthService, UserResponse as BackendUser, LoginCredentials, RegisterCredentials} from '@/hooks/auth';
+import {AuthService, UserResponse as BackendUser, LoginCredentials, RegisterCredentials} from '@/hooks/auth.ts';
 import {Loader2} from "lucide-react";
 
 interface AuthState {

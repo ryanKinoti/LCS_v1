@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import {useAuth} from '@/contexts/AuthContext';
 import {formatDistance} from 'date-fns';
-import {AdminDashboard, CustomerDashboard, StaffDashboard} from "@/hooks/auth";
+import {AdminDashboard, CustomerDashboard, StaffDashboard} from "@/hooks/auth.ts";
 
 function isAdminDashboard(dashboard: unknown): dashboard is AdminDashboard {
     if (!dashboard || typeof dashboard !== 'object') {
