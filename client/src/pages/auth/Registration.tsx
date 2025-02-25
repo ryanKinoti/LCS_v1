@@ -1,4 +1,4 @@
-import {useState} from 'react'
+import React, {useState} from 'react'
 import {Link, useNavigate} from "react-router-dom";
 import {Button} from "@/components/ui/button"
 import {Input} from "@/components/ui/input"
@@ -9,86 +9,96 @@ import {Label} from "@/components/ui/label"
 import {User, Mail, Phone, Lock} from 'lucide-react'
 import logoMain from "@/assets/lcs_main_logo.png"
 import {useAuth} from "@/contexts/AuthContext.tsx";
-import {RegisterCredentials} from "@/hooks/auth.ts";
+import {CustomerRegistrationFormData, customerRegistrationSchema} from "@/lib/validators/auth";
+import {transformBackendErrors} from "@/lib/validators/root";
+import {ContactMethodTypes, UserRoleTypes} from "@/lib/types/constants/declarations";
 
 const RegistrationPage = () => {
 
     const navigate = useNavigate();
     const {register, status} = useAuth();
-    const [error, setError] = useState<string>('');
+    const [error, setError] = useState<string | Record<string, string>>('');
     const isLoading = status === 'authenticating';
 
-    const [formData, setFormData] = useState<RegisterCredentials>({
-        first_name: '',
-        last_name: '',
+    const [formData, setFormData] = useState<CustomerRegistrationFormData>({
         email: '',
-        phone_number: '',
-        preferred_contact: '',
         password: '',
         confirm_password: '',
+        first_name: '',
+        last_name: '',
+        phone_number: '',
         profile_type: 'customer',
-        role: '',
-        company_name: ''
+        role: UserRoleTypes.CLIENT,
+        preferred_contact: ContactMethodTypes.EMAIL,
+        company_name: '',
     });
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
         setFormData({
             ...formData,
-            [e.target.name]: e.target.value
+            [name]: value
         });
-        if (error) setError('');
     };
 
     const handleRoleChange = (value: string) => {
-        setFormData({
-            ...formData,
-            role: value
-        });
+        // Only allow valid role values
+        if (value === UserRoleTypes.CLIENT || value === UserRoleTypes.COMPANY) {
+            setFormData(prev => ({
+                ...prev,
+                role: value as UserRoleTypes.CLIENT | UserRoleTypes.COMPANY,
+                // Clear company name if switching from company to client
+                company_name: value === UserRoleTypes.CLIENT ? '' : prev.company_name
+            }));
+        }
     };
 
-    const validateForm = () => {
-        if (!formData.first_name || !formData.last_name) {
-            setError('Please enter your full name');
-            return false;
+    const validateForm = async () => {
+        try {
+            const result = await customerRegistrationSchema.safeParseAsync(formData);
+
+            if (result.success) {
+                setError('');
+                return result.data;
+            } else {
+                // Extract and format errors from Zod
+                const formattedErrors: Record<string, string> = {};
+                result.error.errors.forEach(err => {
+                    formattedErrors[err.path.join('.')] = err.message;
+                });
+                setError(formattedErrors);
+                return null;
+            }
+        } catch (error) {
+            console.error("Validation error:", error);
+            setError({form: "An unexpected validation error occurred"});
+            return null;
         }
-        if (!formData.email) {
-            setError('Please enter your email');
-            return false;
-        }
-        if (!formData.password) {
-            setError('Please enter a password');
-            return false;
-        }
-        if (formData.password.length < 8) {
-            setError('Password must be at least 8 characters long');
-            return false;
-        }
-        if (formData.password !== formData.confirm_password) {
-            setError('Passwords do not match');
-            return false;
-        }
-        return true;
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
 
-        if (!validateForm()) return;
+        const validData = await validateForm();
+        if (!validData) return;
 
         try {
             await register(formData);
-            navigate('/login');
+            navigate('/login', {state: {registered: true}});
         } catch (error) {
             if (error instanceof Error) {
                 setError(error.message);
+            } else if (typeof error === 'object' && error !== null) {
+                // Handle potential backend validation errors
+                setError(transformBackendErrors(error as Record<string, string[] | string>));
             } else {
                 setError('An unexpected error occurred during registration');
             }
         }
     };
 
-    const showCompanyField = formData.role === 'company';
+    const showCompanyField = formData.role === UserRoleTypes.COMPANY;
 
     return (
         <div className="min-h-screen bg-[#F4F6F8] flex flex-col items-center justify-center px-4">
@@ -172,12 +182,14 @@ const RegistrationPage = () => {
                                     </label>
                                     <Select
                                         value={formData.preferred_contact}
-                                        onValueChange={(value) =>
-                                            setFormData({
-                                                ...formData,
-                                                preferred_contact: value
-                                            })
-                                        }>
+                                        onValueChange={(value) => {
+                                            if (Object.values(ContactMethodTypes).includes(value as ContactMethodTypes)) {
+                                                setFormData({
+                                                    ...formData,
+                                                    preferred_contact: value as ContactMethodTypes
+                                                });
+                                            }
+                                        }}>
                                         <SelectTrigger className="w-full">
                                             <SelectValue placeholder="Select preferred contact method"/>
                                         </SelectTrigger>
@@ -272,8 +284,8 @@ const RegistrationPage = () => {
                                     disabled={isLoading}>
                                     {isLoading ? 'Signing up...' : 'Sign Up'}
                                 </Button>
-                                {error && (
-                                    <p className="text-red-500 text-center mt-2">{error}</p>
+                                {typeof error === 'object' && error !== null && 'form' in error && (
+                                    <p className="text-red-500 text-center mt-2">{error.form}</p>
                                 )}
                             </form>
                         </div>

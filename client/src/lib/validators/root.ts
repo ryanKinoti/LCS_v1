@@ -10,7 +10,7 @@ export interface ValidationResult<T> {
 
 export type ValidationErrors = Record<string, string>;
 
-export function useValidation<T extends z.ZodObject<any>>(schema: T) {
+export function useValidation<T extends z.ZodObject<z.ZodRawShape>>(schema: T) {
     const [errors, setErrors] = useState<ValidationErrors>({});
     const [touched, setTouched] = useState<Set<string>>(new Set());
 
@@ -80,7 +80,8 @@ export function useValidation<T extends z.ZodObject<any>>(schema: T) {
 
     const clearFieldError = (field: string) => {
         setErrors(prev => {
-            const {[field]: _, ...rest} = prev;
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const {[field]: _omitted, ...rest} = prev;
             return rest;
         });
     };

@@ -3,91 +3,11 @@ import {signInWithEmailAndPassword} from "@firebase/auth";
 import {User as FirebaseUser} from 'firebase/auth';
 import {auth} from '@/hooks/firebase';
 import axios from "axios";
-
-export interface LoginCredentials {
-    email: string;
-    password: string;
-}
-
-export interface RegisterCredentials {
-    email: string;
-    password: string;
-    confirm_password: string;
-    first_name: string;
-    last_name: string;
-    phone_number?: string;
-    preferred_contact?: string;
-    profile_type: 'customer';
-    role: string;
-    company_name?: string;
-}
-
-export interface User {
-    id: number;
-    email: string;
-    first_name: string;
-    last_name: string;
-    full_name: string;
-    phone_number: string | null;
-}
-
-// Overview Interfaces
-export interface RevenueData {
-    total_revenue: number;
-    bookings_count: number;
-    average_booking_value: number;
-}
-
-export interface Activity {
-    type: string;
-    action: string;
-    timestamp: string;
-    id: number;
-}
-
-export interface AdminDashboard {
-    total_repairs: number;
-    pending_repairs: number;
-    completed_repairs: number;
-    low_stock_items: number;
-    total_inventory_value: number;
-    active_staff: number;
-    revenue_data: RevenueData;
-    recent_activity: Activity[];
-}
-
-export interface StaffDashboard {
-    assigned_repairs: number;
-    pending_repairs: number;
-    completed_repairs: number;
-    recent_activity: Activity[];
-}
-
-export interface CustomerDashboard {
-    total_bookings: number;
-    active_bookings: number;
-    registered_devices: number;
-    recent_activity: Activity[];
-}
-
-export type Dashboard = AdminDashboard | StaffDashboard | CustomerDashboard;
-
-export interface UserResponse {
-    user: User;
-    role: 'admin' | 'staff' | 'customer';
-    dashboard: Dashboard;
-}
-
-interface RegisterResponse {
-    message: string;
-    data: {
-        email: string;
-        login_token: string;
-    };
-}
+import {LoginCredentials, RegistrationData} from "@/lib/types/interfaces/auth";
+import {RegisterResponse, UserResponse} from "@/lib/types/interfaces/responses";
 
 export const AuthService = {
-    async register(credentials: RegisterCredentials): Promise<RegisterResponse> {
+    async register(credentials: RegistrationData): Promise<RegisterResponse> {
         try {
             const response = await api.post<RegisterResponse>('/accounts/register/', {
                 ...credentials,
@@ -122,6 +42,7 @@ export const AuthService = {
                 credentials.password
             );
             await userCredential.user.getIdToken(true);
+            console.log('logged in user:', userCredential.user);
             return userCredential.user;
         } catch (error) {
             if (error instanceof ApiError) {
@@ -151,6 +72,7 @@ export const AuthService = {
     async getCurrentUser(): Promise<UserResponse | null> {
         try {
             const response = await api.get<UserResponse>('/accounts/user/me/');
+            console.log('current user:', response.data);
             return response.data;
         } catch (error) {
             if (error instanceof ApiError) {
@@ -161,15 +83,6 @@ export const AuthService = {
                 throw new Error(error.data?.detail || 'Failed to fetch user profile');
             }
             throw new Error('An unexpected error occurred while fetching user profile');
-        }
-    },
-
-    async isAuthenticated(): Promise<boolean> {
-        try {
-            const user = await this.getCurrentUser();
-            return !!user;
-        } catch {
-            return false;
         }
     },
 

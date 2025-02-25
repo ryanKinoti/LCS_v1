@@ -1,5 +1,4 @@
 import logging
-from logging import exception
 
 from django.contrib.auth import get_user_model, login
 from django.db import transaction
@@ -15,8 +14,8 @@ from .models import StaffProfile
 from .permissions import IsAdminUser
 from .serializers import (
     RegisterSerializer, CustomerProfileSerializer, StaffProfileSerializer, PasswordChangeSerializer,
-    UserSerializer, UserUpdateSerializer, AdminDashboardSerializer,
-    StaffDashboardSerializer, CustomerDashboardSerializer, UserMinimalSerializer
+    UserSerializer, UserUpdateSerializer, AdminDashboardSerializer, UserMinimalSerializer,
+    StaffProfileMinimalSerializer, CustomerProfileMinimalSerializer
 )
 
 User = get_user_model()
@@ -92,13 +91,6 @@ class UserViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        """
-        Filter queryset based on user role:
-
-        - Superusers can see all users
-        - Staff can see customers
-        - Customers can only see themselves
-        """
         user = self.request.user
         if user.is_superuser:
             return User.objects.all()
@@ -118,69 +110,80 @@ class UserViewSet(viewsets.ModelViewSet):
             return [AllowAny()]
         return super().get_permissions()
 
-    def get_admin_data(self, request):
-        user = request.user
-        if not user.is_superuser:
-            return Response(
-                {'error': 'You do not have permission to access this endpoint.'},
-                status=status.HTTP_403_FORBIDDEN
-            )
-
-        # Prepare context data
-        context_data = {
-            'active_staff': StaffProfile.objects.filter(user__is_active=True).count()
-        }
-
-        return AdminDashboardSerializer(context_data).data
-
-    def get_staff_data(self, request):
-        data = {
-            'assigned_repairs': 0,
-            'pending_repairs': 0,
-            'completed_repairs': 0
-        }
-        return StaffDashboardSerializer(data).data
-
-    def get_customer_data(self, request):
-        data = {
-            'total_bookings': 0,
-            'active_bookings': 0,
-            'completed_bookings': 0
-        }
-        return CustomerDashboardSerializer(data).data
-
     def _determine_user_role(self, user):
         if user.is_superuser:
             return 'admin'
-        elif user.is_staff:
+        elif hasattr(user, 'staff_profile'):
             return 'staff'
-        return 'customer'
+        elif hasattr(user, 'customer_profile'):
+            return 'customer'
+        return None
+
+    def _get_profile_data(self, user):
+        role = self._determine_user_role(user)
+        profile_data = {}
+        if role == 'admin' or role == 'staff':
+            if hasattr(user, 'staff_profile'):
+                profile_data = StaffProfileMinimalSerializer(user.staff_profile).data
+        elif role == 'customer':
+            if hasattr(user, 'customer_profile'):
+                profile_data = CustomerProfileMinimalSerializer(user.customer_profile).data
+
+        return profile_data, role
+
+    def _get_dashboard_data(self, user, role):
+        if role == 'admin':
+            context_data = {
+                'total_repairs': 0,
+                'pending_repairs': 0,
+                'completed_repairs': 0,
+                'low_stock_items': 0,
+                'total_inventory_value': 0.00,
+                'active_staff': 0
+            }
+            return AdminDashboardSerializer(context_data).data
 
     @action(detail=False, methods=['GET'])
     def me(self, request):
         user = request.user
-        logger.info(f"\n=== Processing /me request for {user.email} ===")
+        logger.info(f"\n=== Processing 'me' request for user {user.id} ===")
+        try:
+            context = {'request': request}
+            user_data = UserMinimalSerializer(user, context=context).data
+            profile_data, role = self._get_profile_data(user)
+            response_data = {
+                'user': user_data,
+                'profile': profile_data,
+                'role': role
+            }
+            logger.info(f"Returning 'me' data for {user.email}")
+            return Response(response_data)
+        except Exception as e:
+            logger.error(f"Error fetching dashboard data: {str(e)}")
+            return Response(
+                {'error': 'Failed to fetch dashboard data'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    @action(detail=False, methods=['GET'])
+    def dashboard(self, request):
+        user = request.user
+        logger.info(f"\n=== Processing dashboard request for {user.id} ===")
         try:
             context = {'request': request}
             if request.query_params.get('detail') == 'full':
-                serializer_class = UserSerializer
+                user_data = UserSerializer(user, context=context).data
             else:
-                serializer_class = UserMinimalSerializer
+                user_data = UserMinimalSerializer(user, context=context).data
+            role = self._determine_user_role(user)
+            dashboard_data = self._get_dashboard_data(user, role)
             response_data = {
-                'user': serializer_class(user, context=context).data,
-                'role': self._determine_user_role(user)
+                'user': user_data,
+                'role': role,
+                'dashboard': dashboard_data
             }
-            if user.is_superuser:
-                logger.info("Getting admin dashboard data")
-                response_data['dashboard'] = self.get_admin_data(request)
-            elif user.is_staff:
-                logger.info("Getting staff dashboard data")
-                response_data['dashboard'] = self.get_staff_data(request)
-            else:
-                logger.info("Getting customer dashboard data")
-                response_data['dashboard'] = self.get_customer_data(request)
 
-            logger.info(f"Returning data for {user.email}")
+            logger.info(f"Returning dashboard data for {user.email}")
             return Response(response_data)
         except Exception as e:
             logger.error(f"Error fetching dashboard data: {str(e)}")

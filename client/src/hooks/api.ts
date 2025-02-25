@@ -13,16 +13,8 @@ export class ApiError extends Error {
     ) {
         super(message);
         this.name = 'ApiError';
-        // This is needed to maintain proper prototype chain in TypeScript
         Object.setPrototypeOf(this, ApiError.prototype);
     }
-}
-
-function getCookie(name: string): string | null {
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; ${name}=`);
-    if (parts.length === 2) return parts.pop()?.split(';').shift() ?? null;
-    return null;
 }
 
 const api = axios.create({
@@ -40,11 +32,9 @@ api.interceptors.request.use(
             if (user) {
                 const token = await user.getIdToken(true);
                 const decodedToken = JSON.parse(atob(token.split('.')[1]));
-                const expirationTime = decodedToken.exp * 1000; // Convert to milliseconds
+                const expirationTime = decodedToken.exp * 1000;
 
-                // If token is close to expiration (within 5 minutes), force refresh
                 if (expirationTime - Date.now() < 5 * 60 * 1000) {
-                    console.log('Token close to expiration, forcing refresh');
                     const newToken = await user.getIdToken(true);
                     config.headers.Authorization = `Bearer ${newToken}`;
                 } else {
@@ -54,14 +44,8 @@ api.interceptors.request.use(
                 console.log('No user found in interceptor');
             }
 
-            const csrfToken = getCookie('csrftoken');
-            if (csrfToken) {
-                config.headers['X-CSRFToken'] = csrfToken;
-            }
-
             return config;
         } catch (error) {
-            // Handle token retrieval errors gracefully
             console.error('Error getting auth token:', error);
             return Promise.reject(new ApiError('Authentication failed', 401));
         }

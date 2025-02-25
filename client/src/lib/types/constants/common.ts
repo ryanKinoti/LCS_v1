@@ -8,8 +8,11 @@ import {
     PartStatus,
     MovementType,
     //bookings
-    BookingStatusTypes
-} from "@/lib/types/declarations";
+    BookingStatusTypes,
+    //users
+    UserRoleTypes,
+    ContactMethodTypes
+} from "@/lib/types/constants/declarations.ts";
 
 export class Devices {
     private static instance: Devices;
@@ -140,6 +143,73 @@ export class BookingStatus {
     }
 }
 
+export class UserRoles {
+    private static instance: UserRoles;
+
+    private constructor() {
+    }
+
+    static getInstance(): UserRoles {
+        if (!UserRoles.instance) {
+            UserRoles.instance = new UserRoles();
+        }
+        return UserRoles.instance;
+    }
+
+    get ROLES(): SelectOption[] {
+        return Object.entries(UserRoleTypes).map(([key, value]) => ({
+            value,
+            label: this.formatLabel(key)
+        }));
+    }
+
+    private formatLabel(key: string): string {
+        return key.toLowerCase()
+            .split('_')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
+    }
+
+    isValidRole(role: string): role is UserRoleTypes {
+        return Object.values(UserRoleTypes).includes(role as UserRoleTypes);
+    }
+}
+
+export class ContactMethods {
+    private static instance: ContactMethods;
+
+    private constructor() {
+    }
+
+    static getInstance(): ContactMethods {
+        if (!ContactMethods.instance) {
+            ContactMethods.instance = new ContactMethods();
+        }
+        return ContactMethods.instance;
+    }
+
+    get METHODS(): SelectOption[] {
+        return Object.entries(ContactMethodTypes).map(([key, value]) => ({
+            value,
+            label: this.formatLabel(key)
+        }));
+    }
+
+    private formatLabel(key: string): string {
+        return key.toLowerCase()
+            .split('_')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
+    }
+
+    isValidContactMethod(method: string): method is ContactMethodTypes {
+        return Object.values(ContactMethodTypes).includes(method as ContactMethodTypes);
+    }
+}
+
+
 export const devices = Devices.getInstance();
 export const deviceParts = DeviceParts.getInstance();
 export const bookingStatus = BookingStatus.getInstance();
+export const userRoles = UserRoles.getInstance();
+export const contactMethods = ContactMethods.getInstance();

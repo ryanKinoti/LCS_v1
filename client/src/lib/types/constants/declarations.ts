@@ -39,5 +39,23 @@ export enum BookingStatusTypes {
     CONFIRMED = 'confirmed',
     IN_PROGRESS = 'in_progress',
     COMPLETED = 'completed',
-    CANCELLED = 'cancelled'
+    CANCELLED = 'canceled'
+}
+
+export enum UserRoleTypes {
+    CLIENT = 'client',
+    COMPANY = 'company',
+
+    ADMIN = 'admin',
+    TECHNICIAN = 'technician',
+    RECEPTIONIST = 'receptionist',
+
+    STAFF = 'staff',
+    CUSTOMER = 'customer'
+}
+
+export enum ContactMethodTypes {
+    EMAIL = 'email',
+    PHONE_CALL = 'phone_call',
+    SMS = 'sms'
 }

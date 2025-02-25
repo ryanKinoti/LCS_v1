@@ -6,7 +6,7 @@ from django.urls import resolve
 from django.utils.functional import SimpleLazyObject
 from firebase_admin import auth
 from rest_framework.exceptions import AuthenticationFailed
-
+from apps.accounts.serializers.base import UserMinimalSerializer
 from config import settings
 from utils.firebase_conn import firebase_conn
 
@@ -36,7 +36,8 @@ class FirebaseAuthenticationMiddleware:
         if resolved.app_name == 'admin' or request.path.startswith('/admin/'):
             return self.get_response(request)
 
-        if any(request.path.startswith(exempt_url) for exempt_url in getattr(settings, 'FIREBASE_MIDDLEWARE_EXEMPT_URLS', [])):
+        if any(request.path.startswith(exempt_url) for exempt_url in
+               getattr(settings, 'FIREBASE_MIDDLEWARE_EXEMPT_URLS', [])):
             return self.get_response(request)
 
         request.user = SimpleLazyObject(lambda: self._get_user(request))
@@ -82,7 +83,13 @@ class FirebaseAuthenticationMiddleware:
                     'customer_profile',
                     'staff_profile'
                 ).get(firebase_uid=firebase_uid)
-                logger.info(f"Found user: {user.email}")
+
+                user_data = UserMinimalSerializer(user).data
+
+                user.serialized_data = user_data
+
+                logger.info(f"Found user ID: {user.id}")
+
             except User.DoesNotExist:
 
                 logger.error(f"No user found for Firebase UID: {firebase_uid}")

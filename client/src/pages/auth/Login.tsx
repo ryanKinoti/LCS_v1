@@ -7,7 +7,7 @@ import {Label} from "@/components/ui/label"
 import {Lock, Mail} from "lucide-react"
 import logoMain from "@/assets/lcs_main_logo.png"
 import {useAuth} from "@/contexts/AuthContext.tsx";
-import {LoginCredentials} from "@/hooks/auth.ts";
+import {LoginCredentials} from "@/lib/types/interfaces/auth";
 
 function getDashboardPath(role: 'admin' | 'staff' | 'customer' | null): string {
     switch (role) {

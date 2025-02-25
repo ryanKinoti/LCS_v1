@@ -36,18 +36,16 @@ class UserMinimalSerializer(serializers.ModelSerializer):
 
 
 class CustomerProfileMinimalSerializer(serializers.ModelSerializer):
-    user = UserMinimalSerializer(read_only=True)
 
     class Meta:
         model = CustomerProfile
-        fields = ('id', 'user', 'role', 'company_name')
+        fields = ('id', 'role', 'company_name')
         read_only_fields = fields
 
 
 class StaffProfileMinimalSerializer(serializers.ModelSerializer):
-    user = UserMinimalSerializer(read_only=True)
 
     class Meta:
         model = StaffProfile
-        fields = ('id', 'user', 'role', 'specializations')
+        fields = ('id', 'role', 'specializations')
         read_only_fields = fields

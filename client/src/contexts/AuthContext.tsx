@@ -1,31 +1,18 @@
 import {createContext, useContext, useEffect, useState, ReactNode, useCallback} from 'react';
 import {auth} from '@/hooks/firebase';
-import {User as FirebaseUser} from 'firebase/auth';
-import {AuthService, UserResponse as BackendUser, LoginCredentials, RegisterCredentials} from '@/hooks/auth.ts';
+import {AuthService} from '@/hooks/auth.ts';
 import {Loader2} from "lucide-react";
-
-interface AuthState {
-    firebaseUser: FirebaseUser | null;    // Firebase authentication state
-    user: BackendUser | null;             // Backend user data
-    status: 'idle' | 'authenticating' | 'authenticated' | 'error';
-    initialized: boolean;                  // Whether auth system has completed initial load
-}
-
-interface AuthActions {
-    login: (credentials: LoginCredentials) => Promise<void>;
-    register: (credentials: RegisterCredentials) => Promise<void>;
-    logout: () => Promise<void>;
-    refreshUser: () => Promise<void>;
-}
-
-interface AuthContextType extends AuthState, AuthActions {
-}
+import {
+    AuthContextType,
+    AuthState,
+    AuthActions
+} from "@/lib/types/interfaces/auth.ts";
 
 interface AuthProviderProps {
     children: ReactNode;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({children}: AuthProviderProps) {
 
@@ -52,6 +39,8 @@ export function AuthProvider({children}: AuthProviderProps) {
                     status: 'authenticated',
                     initialized: true
                 });
+            } else {
+                throw new Error("User profile not found");
             }
         } catch (error) {
             console.error('Error fetching user profile:', error);
@@ -62,11 +51,11 @@ export function AuthProvider({children}: AuthProviderProps) {
 
     useEffect(() => {
         const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
+            updateState({firebaseUser});
             if (firebaseUser) {
                 await fetchUserProfile();
             } else {
                 updateState({
-                    firebaseUser: null,
                     user: null,
                     status: 'idle',
                     initialized: true
@@ -83,7 +72,7 @@ export function AuthProvider({children}: AuthProviderProps) {
             try {
                 await AuthService.login(credentials);
             } catch (error) {
-                updateState({ status: 'error' });
+                updateState({status: 'error'});
                 throw error;
             }
         },
@@ -93,17 +82,17 @@ export function AuthProvider({children}: AuthProviderProps) {
             try {
                 await AuthService.register(credentials);
             } catch (error) {
-                updateState({ status: 'error' });
+                updateState({status: 'error'});
                 throw error;
             }
         },
 
         logout: async () => {
-            updateState({ status: 'authenticating' });
+            updateState({status: 'authenticating'});
             try {
                 await AuthService.logout();
             } catch (error) {
-                updateState({ status: 'error' });
+                updateState({status: 'error'});
                 throw error;
             }
         },
@@ -137,7 +126,7 @@ export function AuthProvider({children}: AuthProviderProps) {
 
 export function useAuth() {
     const context = useContext(AuthContext);
-    if (context === undefined) {
+    if (context === null) {
         throw new Error('useAuth must be used within an AuthProvider');
     }
     return context;

@@ -1,10 +1,12 @@
 import {Navigate, useLocation} from 'react-router-dom';
 import {useAuth} from '@/contexts/AuthContext';
 import {Loader2} from 'lucide-react';
+import {UserRoleTypes} from "@/lib/types/constants/declarations";
+import {UserResponse} from "@/lib/types/interfaces/responses.ts";
 
 interface ProtectedRouteProps {
     children: React.ReactNode;
-    allowedRoles?: ('admin' | 'staff' | 'customer')[];
+    allowedRoles?: UserRoleTypes[];
 }
 
 export const ProtectedRoute = ({children, allowedRoles = []}: ProtectedRouteProps) => {
@@ -21,13 +23,17 @@ export const ProtectedRoute = ({children, allowedRoles = []}: ProtectedRouteProp
 
     if (status === 'idle' || status === 'error') {
         sessionStorage.setItem('redirectAfterLogin', location.pathname);
-        return <Navigate to="/" replace state={{from: location}}/>;
+        return <Navigate to="/login" replace state={{from: location}}/>;
     }
 
-    if (allowedRoles.length > 0 && !allowedRoles.includes(user!.role)) {
-        if (!allowedRoles.includes(user!.role)) {
-            return <Navigate to={getDashboardPath(user!.role)} replace/>;
-        }
+    const userRole = getUserRole(user);
+
+    if (!userRole) {
+        return <Navigate to="/login" replace/>;
+    }
+
+    if (allowedRoles.length > 0 && !allowedRoles.includes(userRole)) {
+        return <Navigate to={getDashboardPath(userRole)} replace/>;
     }
 
     return <>{children}</>;
@@ -44,4 +50,9 @@ function getDashboardPath(role: string): string {
         default:
             return '/';
     }
+}
+
+function getUserRole(user: UserResponse | null): UserRoleTypes | undefined {
+    if (!user) return undefined;
+    return user.role;
 }
