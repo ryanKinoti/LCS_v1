@@ -11,7 +11,8 @@ import logoMain from "@/assets/lcs_main_logo.png"
 import {useAuth} from "@/contexts/AuthContext.tsx";
 import {CustomerRegistrationFormData, customerRegistrationSchema} from "@/lib/validators/auth";
 import {transformBackendErrors} from "@/lib/validators/root";
-import {ContactMethodTypes, UserRoleTypes} from "@/lib/types/constants/declarations";
+import {ContactMethodTypes, ToastType, UserRoleTypes} from "@/lib/types/constants/declarations";
+import {useNotification} from "@/contexts/NotificationContext.tsx";
 
 const RegistrationPage = () => {
 
@@ -19,6 +20,8 @@ const RegistrationPage = () => {
     const {register, status} = useAuth();
     const [error, setError] = useState<string | Record<string, string>>('');
     const isLoading = status === 'authenticating';
+    const {showToast} = useNotification();
+
 
     const [formData, setFormData] = useState<CustomerRegistrationFormData>({
         email: '',
@@ -34,7 +37,7 @@ const RegistrationPage = () => {
     });
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = e.target;
+        const {name, value} = e.target;
         setFormData({
             ...formData,
             [name]: value
@@ -85,6 +88,7 @@ const RegistrationPage = () => {
 
         try {
             await register(formData);
+            showToast(`Registration successful. Kindly check your email for further instructions`, ToastType.SUCCESS);
             navigate('/login', {state: {registered: true}});
         } catch (error) {
             if (error instanceof Error) {

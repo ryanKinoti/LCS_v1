@@ -83,8 +83,7 @@ class RegisterView(generics.CreateAPIView):
                 raise ValidationError(profile_serializer.errors)
         except Exception as e:
             logger.error(f"Registration failed: {str(e)}")
-            raise ValidationError(str(e))
-
+            return Response({'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 class UserViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]

@@ -1,7 +1,7 @@
 import {WeeklyAvailability} from "@/lib/types/interfaces/common";
 import {ContactMethodTypes, UserRoleTypes} from "@/lib/types/constants/declarations";
 import {User as FirebaseUser} from "@firebase/auth";
-import {DashboardResponse, UserResponse} from "@/lib/types/interfaces/responses";
+import {DashboardResponse, RegisterResponse, UserResponse} from "@/lib/types/interfaces/responses";
 import {AdminDashboardData, CustomerDashboardData, StaffDashboardData} from "@/lib/types/interfaces/dashboards";
 
 export interface LoginCredentials {
@@ -42,7 +42,7 @@ export interface AuthState {
 
 export interface AuthActions {
     login: (credentials: LoginCredentials) => Promise<void>;
-    register: (credentials: RegistrationData) => Promise<void>;
+    register: (credentials: RegistrationData) => Promise<RegisterResponse>;
     logout: () => Promise<void>;
     refreshUser: () => Promise<void>;
     fetchDashboard: () => Promise<DashboardResponse | null>;

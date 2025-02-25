@@ -8,6 +8,8 @@ import {Lock, Mail} from "lucide-react"
 import logoMain from "@/assets/lcs_main_logo.png"
 import {useAuth} from "@/contexts/AuthContext.tsx";
 import {LoginCredentials} from "@/lib/types/interfaces/auth";
+import {useNotification} from "@/contexts/NotificationContext";
+import {ToastType} from "@/lib/types/constants/declarations.ts";
 
 function getDashboardPath(role: 'admin' | 'staff' | 'customer' | null): string {
     switch (role) {
@@ -26,6 +28,7 @@ const LoginPage = () => {
     const navigate = useNavigate();
     const {login, user, status} = useAuth();
     const [error, setError] = useState<string>('');
+    const {showToast} = useNotification();
 
     const [formData, setFormData] = useState<LoginCredentials>({
         email: "",
@@ -74,6 +77,7 @@ const LoginPage = () => {
 
         try {
             await login(formData);
+            showToast("Logged in successfully", ToastType.SUCCESS);
             // @ts-expect-error - We're not using the error variable here
         } catch (err: never) {
 

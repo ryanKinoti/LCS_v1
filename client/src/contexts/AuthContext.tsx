@@ -1,13 +1,9 @@
-import {createContext, useContext, useEffect, useState, ReactNode, useCallback} from 'react';
+import {createContext, ReactNode, useCallback, useContext, useEffect, useState} from 'react';
 import {auth} from '@/hooks/firebase';
 import {AuthService} from '@/hooks/auth.ts';
 import {Loader2} from "lucide-react";
-import {
-    AuthContextType,
-    AuthState,
-    AuthActions
-} from "@/lib/types/interfaces/auth.ts";
-import { DashboardResponse } from '@/lib/types/interfaces/responses';
+import {AuthActions, AuthContextType, AuthState} from "@/lib/types/interfaces/auth.ts";
+import {DashboardResponse} from '@/lib/types/interfaces/responses';
 
 interface AuthProviderProps {
     children: ReactNode;
@@ -54,7 +50,7 @@ export function AuthProvider({children}: AuthProviderProps) {
 
     const fetchDashboard = useCallback(async (): Promise<DashboardResponse | null> => {
         try {
-            updateState({ status: 'authenticating' });
+            updateState({status: 'authenticating'});
             const dashboardResponse = await AuthService.getDashboardData();
 
             if (dashboardResponse && dashboardResponse.dashboard) {
@@ -65,11 +61,11 @@ export function AuthProvider({children}: AuthProviderProps) {
                 return dashboardResponse;
             }
 
-            updateState({ status: 'authenticated' });
+            updateState({status: 'authenticated'});
             return null;
         } catch (error) {
             console.error('Error fetching dashboard data:', error);
-            updateState({ status: 'error' });
+            updateState({status: 'error'});
             return null;
         }
     }, [updateState]);
@@ -106,7 +102,7 @@ export function AuthProvider({children}: AuthProviderProps) {
         register: async (credentials) => {
             updateState({status: 'authenticating',});
             try {
-                await AuthService.register(credentials);
+                return await AuthService.register(credentials);
             } catch (error) {
                 updateState({status: 'error'});
                 throw error;

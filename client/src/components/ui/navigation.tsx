@@ -3,6 +3,8 @@ import {Link, useNavigate} from 'react-router-dom';
 import {Button} from '@/components/ui/button';
 import {LogOut, User} from 'lucide-react';
 import {useAuth} from "@/contexts/AuthContext.tsx";
+import {useNotification} from "@/contexts/NotificationContext.tsx";
+import {ToastType} from "@/lib/types/constants/declarations.ts";
 
 interface NavigationProps {
     logoSrc: string;
@@ -11,6 +13,7 @@ interface NavigationProps {
 const Navigation: React.FC<NavigationProps> = ({logoSrc}) => {
     const {user, logout} = useAuth();
     const navigate = useNavigate();
+    const { showToast } = useNotification();
 
     const getDashboardRoute = () => {
         if (!user) return '/';
@@ -30,6 +33,7 @@ const Navigation: React.FC<NavigationProps> = ({logoSrc}) => {
     const handleLogout = async () => {
         try {
             await logout();
+            showToast("Logout Successful", ToastType.SUCCESS);
             navigate('/');
         } catch (error) {
             console.error('Logout failed:', error);

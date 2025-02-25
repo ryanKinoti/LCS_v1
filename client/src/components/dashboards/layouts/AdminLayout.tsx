@@ -29,6 +29,8 @@ import {Link, useNavigate} from "react-router-dom";
 import {AuthService} from "@/hooks/auth.ts"
 import {useAuth} from "@/contexts/AuthContext.tsx";
 import {AdminLayoutProps} from "@/lib/types/interfaces/dashboards.ts";
+import {ToastType} from "@/lib/types/constants/declarations.ts";
+import {useNotification} from "@/contexts/NotificationContext.tsx";
 
 const AdminLayout = ({children, activeTab, onTabChange, isLoading: propIsLoading = false}: AdminLayoutProps) => {
     const {fetchDashboard, logout, status} = useAuth();
@@ -37,6 +39,7 @@ const AdminLayout = ({children, activeTab, onTabChange, isLoading: propIsLoading
     const [isRedirecting, setIsRedirecting] = useState(false);
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
     const {toast} = useToast();
+    const {showToast} = useNotification();
     const isLoading = propIsLoading || status === 'authenticating' || isRedirecting;
 
     const handleDjangoAdminRedirect = async () => {
@@ -54,11 +57,8 @@ const AdminLayout = ({children, activeTab, onTabChange, isLoading: propIsLoading
     const handleLogout = async () => {
         try {
             await logout();
+            showToast("Logged out successfully", ToastType.SUCCESS);
             navigate('/login');
-            toast({
-                title: "Logout Successful",
-                description: "You have been logged out successfully.",
-            });
         } catch (error) {
             console.error('Logout failed:', error);
             toast({
