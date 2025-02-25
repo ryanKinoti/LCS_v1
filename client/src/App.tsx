@@ -1,16 +1,18 @@
 import {BrowserRouter as Router, Routes, Route} from "react-router-dom";
+import {AppProviders} from "./providers/AppProviders";
+import {ProtectedRoute} from "@/contexts/ProtectedRoute";
+import {UserRoleTypes} from "@/lib/types/constants/declarations";
+
 import HomePage from "@/pages/HomePage";
 import NotFound from "@/pages/NotFound";
 import LoginPage from "@/pages/auth/Login";
 import Registration from "@/pages/auth/Registration";
-import {AuthProvider} from "@/contexts/AuthContext";
-import {ProtectedRoute} from "@/components/ProtectedRoute";
-import AdminDashboard from "@/pages/dashboard/AdminDashboard.tsx";
+import AdminDashboard from "@/pages/dashboard/AdminDashboard";
 
 function App() {
 
     return (
-        <AuthProvider>
+        <AppProviders>
             <Router>
                 <Routes>
                     {/*Public Routes*/}
@@ -19,7 +21,7 @@ function App() {
                     <Route path="/register" element={<Registration/>}/>
 
                     <Route path="/admin/*" element={
-                        <ProtectedRoute allowedRoles={['admin']}>
+                        <ProtectedRoute allowedRoles={[UserRoleTypes.ADMIN]}>
                             <AdminDashboard/>
                         </ProtectedRoute>
                     }/>
@@ -27,7 +29,7 @@ function App() {
                     <Route path="*" element={<NotFound/>}/>
                 </Routes>
             </Router>
-        </AuthProvider>
+        </AppProviders>
     )
 }
 

@@ -1,5 +1,7 @@
-import {ContactMethodTypes, UserRoleTypes} from "@/lib/types/constants/declarations.ts";
+import {ContactMethodTypes, ToastType, UserRoleTypes} from "@/lib/types/constants/declarations.ts";
+import {ReactNode} from "react";
 
+// common user interfaces
 export interface DailySchedule {
     start: string; // Format: "HH:mm"
     end: string;   // Format: "HH:mm"
@@ -58,4 +60,84 @@ interface StaffUser extends BaseUser {
     customer_profile?: never;
 }
 
+// common UI interfaces
+// 1. Toasts
+interface ToastOptions {
+    duration?: number;
+    action?: {
+        label: string;
+        onClick: () => void;
+    };
+    description?: string;
+}
+
+interface NotificationContextType {
+    showToast: (message: string, type?: ToastType, options?: ToastOptions) => void;
+    showActionToast: (message: string, actionLabel: string, onAction: () => void, type?: ToastType, options?: ToastOptions) => void;
+    copyToClipboard: (text: string, successMessage?: string) => void;
+}
+
+interface NotificationProviderProps {
+    children: ReactNode;
+}
+
+//2. Modals
+interface BaseModalProps {
+    title: string;
+    description?: string;
+    onClose: () => void;
+}
+
+interface ConfirmationModalProps extends BaseModalProps {
+    type: 'confirmation';
+    confirmLabel?: string;
+    cancelLabel?: string;
+    onConfirm: () => void;
+    isDangerous?: boolean;
+}
+
+interface FormModalProps extends BaseModalProps {
+    type: 'form';
+    formContent: ReactNode;
+    submitLabel?: string;
+    onSubmit: () => void;
+}
+
+interface AlertModalProps extends BaseModalProps {
+    type: 'alert';
+    alertType?: 'info' | 'warning' | 'error' | 'success';
+}
+
+interface CustomModalProps extends BaseModalProps {
+    type: 'custom';
+    content: ReactNode;
+}
+
+interface ModalProviderProps {
+    children: ReactNode;
+}
+
+interface ModalContextType {
+    currentModal: ModalProps | null;
+    showConfirmationModal: (props: Omit<ConfirmationModalProps, 'type'>) => void;
+    showFormModal: (props: Omit<FormModalProps, 'type'>) => void;
+    showAlertModal: (props: Omit<AlertModalProps, 'type'>) => void;
+    showCustomModal: (props: Omit<CustomModalProps, 'type'>) => void;
+    closeModal: () => void;
+}
+
+
 export type User = CustomerUser | StaffUser;
+export type ModalProps = | ConfirmationModalProps | FormModalProps | AlertModalProps | CustomModalProps;
+export type {
+    ConfirmationModalProps,
+    FormModalProps,
+    AlertModalProps,
+    CustomModalProps,
+    ModalProviderProps,
+    ModalContextType,
+
+    ToastOptions,
+    NotificationContextType,
+    NotificationProviderProps
+};

@@ -59,3 +59,18 @@ export enum ContactMethodTypes {
     PHONE_CALL = 'phone_call',
     SMS = 'sms'
 }
+
+export enum ToastType {
+    SUCCESS = 'success',
+    ERROR = 'error',
+    WARNING = 'warning',
+    INFO = 'info',
+    DEFAULT = 'default'
+}
+
+export enum ModalType {
+    CONFIRMATION = 'confirmation',
+    FORM = 'form',
+    ALERT = 'alert',
+    CUSTOM = 'custom'
+}
