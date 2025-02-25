@@ -1,261 +1,20 @@
-import React, {ReactElement, useMemo} from 'react';
+import React from 'react';
 import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card';
 import {LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer} from 'recharts';
 import {
-    Users,
     Laptop,
     Package,
     AlertCircle,
     Calendar,
-    Bell,
-    Settings,
     Loader2,
+    Clock, AlertTriangle, DollarSign, ExternalLink
 } from 'lucide-react';
 import {useAuth} from '@/contexts/AuthContext';
-import {formatDistance} from 'date-fns';
-import {AdminDashboard, CustomerDashboard, StaffDashboard} from "@/hooks/auth.ts";
+import {isAdminDashboard} from '@/lib/types/interfaces/responses';
+import {AdminDashboardData} from '@/lib/types/interfaces/dashboards';
+import {QuickActionButtonProps, StatCardProps} from "@/lib/types/interfaces/overview.ts";
 
-function isAdminDashboard(dashboard: unknown): dashboard is AdminDashboard {
-    if (!dashboard || typeof dashboard !== 'object') {
-        return false;
-    }
-    return dashboard && 'total_inventory_value' in dashboard;
-}
-
-function isStaffDashboard(dashboard: unknown): dashboard is StaffDashboard {
-    if (!dashboard || typeof dashboard !== 'object') {
-        return false;
-    }
-    return dashboard && 'assigned_repairs' in dashboard;
-}
-
-function isCustomerDashboard(dashboard: unknown): dashboard is CustomerDashboard {
-    if (!dashboard || typeof dashboard !== 'object') {
-        return false;
-    }
-    return dashboard && 'registered_devices' in dashboard;
-}
-
-const Overview = () => {
-    const {user} = useAuth();
-
-    const revenueChartData = useMemo(() => {
-        if (!user?.dashboard) return [];
-        const dashboard = user.dashboard;
-        if (isAdminDashboard(dashboard)) {
-            return [{
-                month: 'Current',
-                amount: dashboard.revenue_data.total_revenue
-            }];
-        }
-        return [];
-    }, [user?.dashboard]);
-
-    if (!user) {
-        return (
-            <div className="flex items-center justify-center h-screen">
-                <Loader2 className="h-8 w-8 animate-spin"/>
-            </div>
-        );
-    }
-
-    const {dashboard, role} = user;
-
-    let typedDashboard: AdminDashboard | StaffDashboard | CustomerDashboard;
-    if (role === 'admin' && isAdminDashboard(dashboard)) {
-        typedDashboard = dashboard;
-    } else if (role === 'staff' && isStaffDashboard(dashboard)) {
-        typedDashboard = dashboard;
-    } else if (role === 'customer' && isCustomerDashboard(dashboard)) {
-        typedDashboard = dashboard;
-    } else {
-        // Handle unexpected dashboard type
-        console.error('Dashboard type does not match user role');
-        return (
-            <div className="flex items-center justify-center h-screen">
-                <div>Error: Invalid dashboard type</div>
-            </div>
-        );
-    }
-
-    return (
-        <div className="min-h-screen bg-[#F8F9FA]">
-            <main className="container mx-auto p-4">
-                {/* Stats Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                    {isAdminDashboard(typedDashboard) && (
-                        <>
-                            <StatCard
-                                title="Total Repairs"
-                                value={typedDashboard.total_repairs}
-                                icon={<Laptop className="h-6 w-6"/>}
-                                color="#0066FF"/>
-                            <StatCard
-                                title="Pending Repairs"
-                                value={typedDashboard.pending_repairs}
-                                icon={<AlertCircle className="h-6 w-6"/>}
-                                color="#DC3545"/>
-                            <StatCard
-                                title="Low Stock Items"
-                                value={typedDashboard.low_stock_items}
-                                icon={<Package className="h-6 w-6"/>}
-                                color="#28A745"/>
-                            <StatCard
-                                title="Active Staff"
-                                value={typedDashboard.active_staff}
-                                icon={<Users className="h-6 w-6"/>}
-                                color="#FFC107"/>
-                        </>
-                    )}
-
-                    {isStaffDashboard(typedDashboard) && (
-                        <>
-                            <StatCard
-                                title="Assigned Repairs"
-                                value={typedDashboard.assigned_repairs}
-                                icon={<Laptop/>}
-                                color="#0066FF"
-                            />
-                            <StatCard
-                                title="Pending Repairs"
-                                value={typedDashboard.pending_repairs}
-                                icon={<AlertCircle/>}
-                                color="#DC3545"
-                            />
-                            <StatCard
-                                title="Completed Repairs"
-                                value={typedDashboard.completed_repairs}
-                                icon={<Package/>}
-                                color="#28A745"
-                            />
-                        </>
-                    )}
-
-                    {isCustomerDashboard(typedDashboard) && (
-                        <>
-                            <StatCard
-                                title="Total Bookings"
-                                value={typedDashboard.total_bookings}
-                                icon={<Calendar/>}
-                                color="#0066FF"
-                            />
-                            <StatCard
-                                title="Active Bookings"
-                                value={typedDashboard.active_bookings}
-                                icon={<AlertCircle/>}
-                                color="#DC3545"
-                            />
-                            <StatCard
-                                title="Registered Devices"
-                                value={typedDashboard.registered_devices}
-                                icon={<Laptop/>}
-                                color="#28A745"
-                            />
-                        </>
-                    )}
-                </div>
-
-                {/* Charts and Additional Info */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Revenue Chart (Admin Only) */}
-                    {isAdminDashboard(typedDashboard) && revenueChartData.length > 0 && (
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Revenue Overview</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="h-72">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <LineChart data={revenueChartData}>
-                                            <CartesianGrid strokeDasharray="3 3"/>
-                                            <XAxis dataKey="month"/>
-                                            <YAxis/>
-                                            <Tooltip/>
-                                            <Line
-                                                type="monotone"
-                                                dataKey="amount"
-                                                stroke="#0066FF"
-                                                strokeWidth={2}
-                                            />
-                                        </LineChart>
-                                    </ResponsiveContainer>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    )}
-
-                    {/* Recent Activity */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Recent Activity</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="space-y-4">
-                                {typedDashboard.recent_activity.map((activity, index) => (
-                                    <div key={`${activity.type}-${activity.id}-${index}`}
-                                         className="flex items-start space-x-4">
-                                        <div className="rounded-full p-2 bg-blue-100">
-                                            {activity.type === 'booking' ? (
-                                                <Calendar className="h-4 w-4 text-blue-600"/>
-                                            ) : (
-                                                <Package className="h-4 w-4 text-blue-600"/>
-                                            )}
-                                        </div>
-                                        <div className="flex-1">
-                                            <p className="text-sm text-gray-800">{activity.action}</p>
-                                            <p className="text-xs text-gray-500">
-                                                {formatDistance(new Date(activity.timestamp), new Date(), {addSuffix: true})}
-                                            </p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Quick Actions */}
-                    {isAdminDashboard(typedDashboard) && (
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Quick Actions</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="flex flex-wrap gap-4">
-                                    <QuickActionButton
-                                        icon={<Calendar/>}
-                                        label="New Booking"
-                                        onClick={() => window.location.href = '/admin/bookings/new'}/>
-                                    <QuickActionButton
-                                        icon={<Package/>}
-                                        label="Add Inventory"
-                                        onClick={() => window.location.href = '/admin/inventory/new'}/>
-                                    <QuickActionButton
-                                        icon={<Bell/>}
-                                        label="Notifications"
-                                        onClick={() => window.location.href = '/admin/notifications'}/>
-                                    <QuickActionButton
-                                        icon={<Settings/>}
-                                        label="Settings"
-                                        onClick={() => window.location.href = '/admin/settings'}/>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    )}
-                </div>
-            </main>
-        </div>
-    );
-};
-
-// Stat Card Component
-interface StatCardProps {
-    title: string;
-    value: number;
-    icon: ReactElement;
-    color: string;
-}
-
-const StatCard: React.FC<StatCardProps> = ({title, value, icon, color}) => (
+const StatCard: React.FC<StatCardProps> = ({title, value, icon, color, subtitle}) => (
     <Card>
         <CardContent className="flex items-center p-4">
             <div
@@ -266,17 +25,11 @@ const StatCard: React.FC<StatCardProps> = ({title, value, icon, color}) => (
             <div>
                 <p className="text-sm text-gray-600">{title}</p>
                 <p className="text-2xl font-bold text-[#343A40]">{value}</p>
+                {subtitle && <p className="text-xs text-gray-500">{subtitle}</p>}
             </div>
         </CardContent>
     </Card>
 );
-
-// Quick Action Button Component
-interface QuickActionButtonProps {
-    icon: ReactElement;
-    label: string;
-    onClick: () => void;
-}
 
 const QuickActionButton: React.FC<QuickActionButtonProps> = ({icon, label, onClick}) => (
     <button
@@ -290,5 +43,249 @@ const QuickActionButton: React.FC<QuickActionButtonProps> = ({icon, label, onCli
         </div>
     </button>
 );
+
+const prepareFinancialChartData = (financialData: AdminDashboardData['financial_snapshot']['data']) => {
+    return financialData.map(item => ({
+        date: item.date,
+        revenue: parseFloat(item.total_revenue),
+        expenses: parseFloat(item.total_expenses),
+        netIncome: parseFloat(item.net_income)
+    }));
+};
+
+const Overview = () => {
+    const {dashboardData, status} = useAuth();
+
+    if (status === 'authenticating' || !dashboardData) {
+        return (
+            <div className="flex items-center justify-center h-full">
+                <Loader2 className="h-8 w-8 animate-spin"/>
+            </div>
+        );
+    }
+
+    if (!isAdminDashboard(dashboardData)) {
+        return (
+            <div className="p-4">
+                <h1 className="text-2xl font-bold">Error</h1>
+                <p>Invalid dashboard data type. Expected admin dashboard.</p>
+            </div>
+        );
+    }
+
+    const adminData = dashboardData;
+    const financialChartData = prepareFinancialChartData(adminData.financial_snapshot.data);
+
+
+    return (
+        <div className="p-4">
+            <h1 className="text-2xl font-bold mb-6">Dashboard Overview</h1>
+
+            {/* Stats Grid - Booking Statistics */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <StatCard
+                    title="Active Bookings"
+                    value={adminData.booking_statistics.active_bookings}
+                    icon={<Laptop className="h-6 w-6"/>}
+                    color="#0066FF"
+                />
+                <StatCard
+                    title="Pending Bookings"
+                    value={adminData.booking_statistics.pending_bookings}
+                    icon={<Clock className="h-6 w-6"/>}
+                    color="#FFC107"
+                />
+                <StatCard
+                    title="Completed Bookings"
+                    value={adminData.booking_statistics.completed_bookings}
+                    icon={<Calendar className="h-6 w-6"/>}
+                    color="#28A745"
+                />
+                <StatCard
+                    title="Inventory Alerts"
+                    value={adminData.inventory_alerts.total_count}
+                    icon={<AlertTriangle className="h-6 w-6"/>}
+                    color="#DC3545"
+                    subtitle="Items low in stock"
+                />
+            </div>
+
+            {/* Charts and Additional Info */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                {/* Financial Chart - Spans 2 columns */}
+                <Card className="lg:col-span-2">
+                    <CardHeader>
+                        <CardTitle>Financial Overview (Last 7 Days)</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="h-64">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <LineChart data={financialChartData}>
+                                    <CartesianGrid strokeDasharray="3 3"/>
+                                    <XAxis dataKey="date"/>
+                                    <YAxis/>
+                                    <Tooltip formatter={(value) => [`$${value}`, '']}/>
+                                    <Line
+                                        type="monotone"
+                                        dataKey="revenue"
+                                        name="Revenue"
+                                        stroke="#28A745"
+                                        strokeWidth={2}
+                                    />
+                                    <Line
+                                        type="monotone"
+                                        dataKey="expenses"
+                                        name="Expenses"
+                                        stroke="#DC3545"
+                                        strokeWidth={2}
+                                    />
+                                    <Line
+                                        type="monotone"
+                                        dataKey="netIncome"
+                                        name="Net Income"
+                                        stroke="#0066FF"
+                                        strokeWidth={2}
+                                    />
+                                </LineChart>
+                            </ResponsiveContainer>
+                        </div>
+                        <div className="grid grid-cols-3 gap-4 mt-4">
+                            <div>
+                                <p className="text-gray-500 text-xs">Revenue</p>
+                                <p className="text-lg font-semibold text-green-600">
+                                    ${adminData.financial_snapshot.summary.total_revenue}
+                                </p>
+                            </div>
+                            <div>
+                                <p className="text-gray-500 text-xs">Expenses</p>
+                                <p className="text-lg font-semibold text-red-600">
+                                    ${adminData.financial_snapshot.summary.total_expenses}
+                                </p>
+                            </div>
+                            <div>
+                                <p className="text-gray-500 text-xs">Net Income</p>
+                                <p className="text-lg font-semibold text-blue-600">
+                                    ${adminData.financial_snapshot.summary.net_revenue}
+                                </p>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* Inventory Alerts */}
+                <Card className="h-full">
+                    <CardHeader>
+                        <CardTitle>Inventory Alerts</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        {adminData.inventory_alerts.total_count === 0 ? (
+                            <div className="flex flex-col items-center justify-center h-64 bg-gray-50 rounded-md">
+                                <Package className="h-12 w-12 text-gray-400 mb-2"/>
+                                <p className="text-gray-500">No inventory alerts</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-4 max-h-64 overflow-auto">
+                                {adminData.inventory_alerts.items.map((item) => (
+                                    <div key={item.id}
+                                         className="flex items-center justify-between p-3 bg-red-50 rounded-md">
+                                        <div>
+                                            <h3 className="font-medium">{item.name}</h3>
+                                            <p className="text-sm text-gray-500">{item.model}</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-red-600 font-bold">{item.quantity} left</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+            </div>
+
+            {/* Bottom Grid: Recent Activities & Quick Actions */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Recent Activities */}
+                <Card className="lg:col-span-2">
+                    <CardHeader>
+                        <CardTitle>Recent Activities</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        {adminData.recent_activities.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center h-32 bg-gray-50 rounded-md">
+                                <AlertCircle className="h-12 w-12 text-gray-400 mb-2"/>
+                                <p className="text-gray-500">No recent activities</p>
+                            </div>
+                        ) : (
+                            <div className="overflow-x-auto">
+                                <table className="min-w-full">
+                                    <thead className="bg-gray-50">
+                                    <tr>
+                                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Job
+                                            Card
+                                        </th>
+                                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service</th>
+                                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody className="bg-white divide-y divide-gray-200">
+                                    {adminData.recent_activities.slice(0, 5).map((activity) => (
+                                        <tr key={activity.id}>
+                                            <td className="px-4 py-2 whitespace-nowrap">{activity.job_card_number}</td>
+                                            <td className="px-4 py-2 whitespace-nowrap">{activity.detailed_service.service_name}</td>
+                                            <td className="px-4 py-2 whitespace-nowrap">
+                                                    <span
+                                                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                                            activity.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                                                activity.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                                                    activity.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                                                                        'bg-gray-100 text-gray-800'
+                                                        }`}>
+                                                        {activity.status}
+                                                    </span>
+                                            </td>
+                                            <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
+                                                {new Date(activity.created_at).toLocaleDateString()}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+
+                {/* Quick Actions */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Quick Actions</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="grid grid-cols-2 gap-4">
+                            <QuickActionButton
+                                icon={<Calendar/>}
+                                label="New Booking"
+                                onClick={() => window.location.href = '/admin/bookings/new'}/>
+                            <QuickActionButton
+                                icon={<Package/>}
+                                label="Add Inventory"
+                                onClick={() => window.location.href = '/admin/inventory/new'}/>
+                            <QuickActionButton
+                                icon={<DollarSign/>}
+                                label="Finances"
+                                onClick={() => window.location.href = '/admin/finances'}/>
+                            <QuickActionButton
+                                icon={<ExternalLink/>}
+                                label="Reports"
+                                onClick={() => window.location.href = '/admin/reports'}/>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+        </div>
+    );
+};
 
 export default Overview;

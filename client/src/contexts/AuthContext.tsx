@@ -7,6 +7,7 @@ import {
     AuthState,
     AuthActions
 } from "@/lib/types/interfaces/auth.ts";
+import { DashboardResponse } from '@/lib/types/interfaces/responses';
 
 interface AuthProviderProps {
     children: ReactNode;
@@ -19,6 +20,7 @@ export function AuthProvider({children}: AuthProviderProps) {
     const [state, setState] = useState<AuthState>({
         firebaseUser: null,
         user: null,
+        dashboardData: null,
         status: 'idle',
         initialized: false
     });
@@ -33,6 +35,7 @@ export function AuthProvider({children}: AuthProviderProps) {
                 status: 'authenticating',
             });
             const userProfile = await AuthService.getCurrentUser();
+            await AuthService.getDashboardData();
             if (userProfile) {
                 updateState({
                     user: userProfile,
@@ -49,6 +52,28 @@ export function AuthProvider({children}: AuthProviderProps) {
         }
     }, [updateState]);
 
+    const fetchDashboard = useCallback(async (): Promise<DashboardResponse | null> => {
+        try {
+            updateState({ status: 'authenticating' });
+            const dashboardResponse = await AuthService.getDashboardData();
+
+            if (dashboardResponse && dashboardResponse.dashboard) {
+                updateState({
+                    dashboardData: dashboardResponse.dashboard,
+                    status: 'authenticated'
+                });
+                return dashboardResponse;
+            }
+
+            updateState({ status: 'authenticated' });
+            return null;
+        } catch (error) {
+            console.error('Error fetching dashboard data:', error);
+            updateState({ status: 'error' });
+            return null;
+        }
+    }, [updateState]);
+
     useEffect(() => {
         const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
             updateState({firebaseUser});
@@ -57,6 +82,7 @@ export function AuthProvider({children}: AuthProviderProps) {
             } else {
                 updateState({
                     user: null,
+                    dashboardData: null,
                     status: 'idle',
                     initialized: true
                 });
@@ -101,7 +127,9 @@ export function AuthProvider({children}: AuthProviderProps) {
             if (state.firebaseUser) {
                 await fetchUserProfile();
             }
-        }
+        },
+
+        fetchDashboard,
     };
 
     const contextValue: AuthContextType = {

@@ -4,7 +4,7 @@ import {User as FirebaseUser} from 'firebase/auth';
 import {auth} from '@/hooks/firebase';
 import axios from "axios";
 import {LoginCredentials, RegistrationData} from "@/lib/types/interfaces/auth";
-import {RegisterResponse, UserResponse} from "@/lib/types/interfaces/responses";
+import {DashboardResponse, RegisterResponse, UserResponse} from "@/lib/types/interfaces/responses";
 
 export const AuthService = {
     async register(credentials: RegistrationData): Promise<RegisterResponse> {
@@ -42,7 +42,6 @@ export const AuthService = {
                 credentials.password
             );
             await userCredential.user.getIdToken(true);
-            console.log('logged in user:', userCredential.user);
             return userCredential.user;
         } catch (error) {
             if (error instanceof ApiError) {
@@ -72,7 +71,6 @@ export const AuthService = {
     async getCurrentUser(): Promise<UserResponse | null> {
         try {
             const response = await api.get<UserResponse>('/accounts/user/me/');
-            console.log('current user:', response.data);
             return response.data;
         } catch (error) {
             if (error instanceof ApiError) {
@@ -83,6 +81,21 @@ export const AuthService = {
                 throw new Error(error.data?.detail || 'Failed to fetch user profile');
             }
             throw new Error('An unexpected error occurred while fetching user profile');
+        }
+    },
+
+    async getDashboardData(): Promise<DashboardResponse | null> {
+        try {
+            const response = await api.get('/accounts/user/dashboard/');
+            return response.data;
+        } catch (error) {
+            if (error instanceof ApiError) {
+                if (error.status === 401) {
+                    return null;
+                }
+                throw new Error(error.data?.detail || 'Failed to fetch dashboard data');
+            }
+            throw new Error('An unexpected error occurred while fetching dashboard data');
         }
     },
 

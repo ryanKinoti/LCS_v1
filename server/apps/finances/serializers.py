@@ -229,3 +229,12 @@ class FinancialSummarySerializer(serializers.ModelSerializer):
             return 0
         net_revenue = obj.total_revenue - obj.total_expenses
         return round((net_revenue / obj.total_revenue) * 100, 2)
+
+class FinancialSnapshotSerializer(serializers.Serializer):
+    """
+    Serializer for financial snapshot data displayed in charts
+    """
+    date = serializers.DateField()
+    total_revenue = serializers.DecimalField(max_digits=10, decimal_places=2)
+    total_expenses = serializers.DecimalField(max_digits=10, decimal_places=2)
+    net_income = serializers.DecimalField(max_digits=10, decimal_places=2)

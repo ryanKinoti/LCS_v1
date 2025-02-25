@@ -1,22 +1,18 @@
 # apps/accounts/serializers/dashboard.py
-from datetime import timedelta
+from datetime import timedelta, datetime
 
-from django.db.models import Q, F
+from django.db.models import Q, F, Count, Sum
 from django.utils import timezone
 from rest_framework import serializers
 
-from apps.accounts.models import StaffProfile
-from apps.accounts.serializers import StaffProfileSerializer, StaffProfileMinimalSerializer
 from apps.bookings.models import Booking
-from apps.bookings.serializers import BookingDetailSerializer, BookingMinimalSerializer
+from apps.bookings.serializers import BookingDetailSerializer
 from apps.finances.models import Transaction, FinancialSummary
-from apps.finances.serializers import TransactionDetailSerializer, FinancialSummarySerializer
-from apps.inventory.models import DevicePart, DeviceRepairHistory
-from apps.inventory.serializers import DevicePartDetailSerializer, DevicePartMinimalSerializer, \
-    DeviceRepairHistoryDetailSerializer
-from apps.services.models import Service, ServiceCategory
-from apps.services.serializers import ServiceDetailSerializer, ServiceCategoryDetailSerializer
-from utils.constants import BookingStatus, Finances
+from apps.finances.serializers import FinancialSummarySerializer, \
+    FinancialSnapshotSerializer
+from apps.inventory.models import DevicePart
+from apps.inventory.serializers import DevicePartMinimalSerializer
+from utils.constants import BookingStatus, Finances, DeviceParts
 
 
 class AdminDashboardSerializer(serializers.Serializer):
@@ -24,158 +20,123 @@ class AdminDashboardSerializer(serializers.Serializer):
     Comprehensive serializer for admin dashboard data.
     Aggregates data from all relevant models to provide a complete overview.
     """
-    # Overview statistics
-    total_repairs = serializers.IntegerField()
-    pending_repairs = serializers.IntegerField()
-    completed_repairs = serializers.IntegerField()
-    low_stock_items = serializers.IntegerField()
-    total_inventory_value = serializers.DecimalField(max_digits=10, decimal_places=2)
-    active_staff = serializers.IntegerField()
+    active_bookings_count = serializers.IntegerField(read_only=True)
+    pending_bookings_count = serializers.IntegerField(read_only=True)
+    inventory_alerts_count = serializers.IntegerField(read_only=True)
 
     def to_representation(self, instance):
-        """
-        Transform the data into the required format with all necessary calculations.
-        """
-        # Time ranges
         now = timezone.now()
-        thirty_days_ago = now - timedelta(days=30)
-
-        repair_stats = self._get_repair_statistics(thirty_days_ago)
-        inventory_stats = self._get_inventory_statistics()
-        staff_stats = self._get_staff_statistics(thirty_days_ago)
-        financial_stats = self._get_financial_statistics(thirty_days_ago)
-        service_stats = self._get_service_statistics(thirty_days_ago)
+        seven_days_ago = now - timedelta(days=7)
+        booking_stats = self._get_booking_statistics()
+        inventory_alerts = self._get_inventory_alerts()
+        financial_snapshot = self._get_financial_snapshot(seven_days_ago, now)
         recent_activities = self._get_recent_activities()
+
         return {
-            'repair_statistics': repair_stats,
-            'inventory_overview': inventory_stats,
-            'staff_overview': staff_stats,
-            'financial_metrics': financial_stats,
-            'service_metrics': service_stats,
-            'recent_activities': recent_activities,
+            'booking_statistics': booking_stats,
+            'inventory_alerts': {
+                'total_count': len(inventory_alerts),
+                'items': inventory_alerts
+            },
+            'financial_snapshot': {
+                'data': financial_snapshot,
+                'summary': self._get_financial_summary()
+            },
+            'recent_activities': recent_activities
         }
 
-    def _get_repair_statistics(self, since_date):
-        """Aggregates repair statistics using BookingDetailSerializer"""
-        bookings = Booking.objects.filter(created_at__gte=since_date)
-        serialized_bookings = BookingDetailSerializer(bookings, many=True).data
+    def _get_booking_statistics(self):
+        active_statuses = [BookingStatus.CONFIRMED, BookingStatus.IN_PROGRESS]
+        booking_counts = Booking.objects.filter(is_active=True).values('status').annotate(
+            count=Count('status')
+        )
+        counts_by_status = {item['status']: item['count'] for item in booking_counts}
+        active_count = sum(counts_by_status.get(status, 0) for status in active_statuses)
+        pending_count = counts_by_status.get(BookingStatus.PENDING, 0)
+        completed_count = counts_by_status.get(BookingStatus.COMPLETED, 0)
+        canceled_count = counts_by_status.get(BookingStatus.CANCELLED, 0)
 
-        stats = {
-            'total_repairs': len(serialized_bookings),
-            'status_breakdown': {},
-            'recent_bookings': BookingMinimalSerializer(
-                bookings.order_by('-created_at')[:5],
-                many=True
-            ).data
+        return {
+            'active_bookings': active_count,
+            'pending_bookings': pending_count,
+            'completed_bookings': completed_count,
+            'canceled_bookings': canceled_count,
+            'total_bookings': active_count + pending_count + completed_count + canceled_count
         }
 
-        for booking in serialized_bookings:
-            status = booking['status']
-            stats['status_breakdown'][status] = stats['status_breakdown'].get(status, 0) + 1
-
-        return stats
-
-    def _get_inventory_statistics(self):
-        """Aggregates inventory statistics using DevicePartDetailSerializer"""
+    def _get_inventory_alerts(self):
         low_stock_parts = DevicePart.objects.filter(
             Q(quantity__lte=F('minimum_stock')) &
-            Q(customer_laptop__isnull=True)
-        )
-        return {
-            'low_stock_items': DevicePartDetailSerializer(
-                low_stock_parts,
-                many=True
-            ).data,
-            'total_parts': DevicePartMinimalSerializer(
-                DevicePart.objects.all(),
-                many=True
-            ).data
-        }
+            Q(customer_laptop__isnull=True) &
+            ~Q(status=DeviceParts.OUT_OF_STOCK)  # Exclude already marked out-of-stock
+        ).order_by('quantity')[:10]  # Limit to 10 most critical items
 
-    def _get_staff_statistics(self, since_date):
-        """Aggregates staff statistics using StaffProfileSerializer"""
-        active_staff = StaffProfile.objects.filter(user__is_active=True)
+        return DevicePartMinimalSerializer(low_stock_parts, many=True).data
 
-        return {
-            'active_staff': StaffProfileSerializer(
-                active_staff,
-                many=True
-            ).data,
-            'technician_stats': StaffProfileMinimalSerializer(
-                active_staff.filter(role='technician'),
-                many=True
-            ).data
-        }
+    def _get_financial_snapshot(self, start_date, end_date):
+        date_range = []
+        current_date = start_date.date()
+        end_date = end_date.date()
 
-    def _get_financial_statistics(self, since_date):
-        """Aggregates financial statistics using TransactionDetailSerializer"""
-        recent_transactions = Transaction.objects.filter(created_at__gte=since_date)
+        while current_date <= end_date:
+            date_range.append(current_date)
+            current_date += timedelta(days=1)
 
-        return {
-            'recent_transactions': TransactionDetailSerializer(
-                recent_transactions,
-                many=True
-            ).data,
-            'summary': FinancialSummarySerializer(
-                FinancialSummary.objects.latest('date')
-            ).data
-        }
+        financial_data = []
+        for date in date_range:  # Get transactions for this date
+            day_start = timezone.make_aware(datetime.combine(date, datetime.min.time()))
+            day_end = timezone.make_aware(datetime.combine(date, datetime.max.time()))
 
-    def _get_service_statistics(self, since_date):
-        """Aggregates service statistics using ServiceDetailSerializer"""
-        active_services = Service.objects.filter(active=True)
+            # Calculate revenue (money coming in)
+            revenue_transactions = Transaction.objects.filter(
+                created_at__range=(day_start, day_end),
+                transaction_type__in=[Finances.BOOKING_PAYMENT, Finances.SERVICE_PAYMENT],
+                status__in=[Finances.PAID, Finances.PARTIAL]
+            )
 
-        return {
-            'available_services': ServiceDetailSerializer(
-                active_services,
-                many=True
-            ).data,
-            'categories': ServiceCategoryDetailSerializer(
-                ServiceCategory.objects.all(),
-                many=True
-            ).data
-        }
+            # Calculate expenses (money going out)
+            expense_transactions = Transaction.objects.filter(
+                created_at__range=(day_start, day_end),
+                transaction_type__in=[Finances.PARTS_PURCHASE, Finances.STAFF_SALARY]
+            )
 
-    def _calculate_revenue_data(self, start_date):
-        """Calculate revenue metrics for the specified period."""
-        completed_bookings = Booking.objects.filter(
-            status=BookingStatus.COMPLETED,
-            payment_status=Finances.PAID,
-            created_at__gte=start_date
-        )
+            total_revenue = revenue_transactions.aggregate(Sum('total_amount'))['total_amount__sum'] or 0
+            total_expenses = expense_transactions.aggregate(Sum('total_amount'))['total_amount__sum'] or 0
+            net_income = total_revenue - total_expenses
 
-        total_revenue = sum(
-            booking.detailed_service.price + booking.total_parts_cost
-            for booking in completed_bookings
-        )
+            financial_data.append({
+                'date': date,
+                'total_revenue': total_revenue,
+                'total_expenses': total_expenses,
+                'net_income': net_income
+            })
 
-        return {
-            'total_revenue': total_revenue,
-            'bookings_count': completed_bookings.count(),
-            'average_booking_value': total_revenue / completed_bookings.count() if completed_bookings.exists() else 0
-        }
+        return FinancialSnapshotSerializer(financial_data, many=True).data
+
+    def _get_financial_summary(self):
+        try:
+            latest_summary = FinancialSummary.objects.latest('date')
+            return FinancialSummarySerializer(latest_summary).data
+        except FinancialSummary.DoesNotExist:
+            return {
+                'total_revenue': 0,
+                'total_expenses': 0,
+                'service_revenue': 0,
+                'parts_revenue': 0,
+                'outstanding_payments': 0,
+                'net_revenue': 0,
+                'profit_margin': 0
+            }
 
     def _get_recent_activities(self):
-        """Compiles recent activities across all domains"""
-        activities = []
+        recent_bookings = Booking.objects.select_related(
+            'customer__user',
+            'technician__user',
+            'detailed_service__service',
+            'device'
+        ).order_by('-created_at')[:10]
 
-        # Get recent bookings
-        recent_bookings = Booking.objects.order_by('-created_at')[:5]
-        activities.extend({
-                              'type': 'booking',
-                              'data': BookingMinimalSerializer(booking).data,
-                              'timestamp': booking.created_at
-                          } for booking in recent_bookings)
-
-        # Get recent repairs
-        recent_repairs = DeviceRepairHistory.objects.order_by('-repair_date')[:5]
-        activities.extend({
-                              'type': 'repair',
-                              'data': DeviceRepairHistoryDetailSerializer(repair).data,
-                              'timestamp': repair.repair_date
-                          } for repair in recent_repairs)
-
-        return sorted(activities, key=lambda x: x['timestamp'], reverse=True)
+        return BookingDetailSerializer(recent_bookings, many=True).data
 
 
 class StaffDashboardSerializer(serializers.Serializer):

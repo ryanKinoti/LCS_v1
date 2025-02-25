@@ -133,15 +133,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
     def _get_dashboard_data(self, user, role):
         if role == 'admin':
-            context_data = {
-                'total_repairs': 0,
-                'pending_repairs': 0,
-                'completed_repairs': 0,
-                'low_stock_items': 0,
-                'total_inventory_value': 0.00,
-                'active_staff': 0
-            }
-            return AdminDashboardSerializer(context_data).data
+            return AdminDashboardSerializer({}).data
 
     @action(detail=False, methods=['GET'])
     def me(self, request):

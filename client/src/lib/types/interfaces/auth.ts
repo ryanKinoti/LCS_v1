@@ -1,7 +1,8 @@
 import {WeeklyAvailability} from "@/lib/types/interfaces/common";
 import {ContactMethodTypes, UserRoleTypes} from "@/lib/types/constants/declarations";
 import {User as FirebaseUser} from "@firebase/auth";
-import {UserResponse} from "@/lib/types/interfaces/responses";
+import {DashboardResponse, UserResponse} from "@/lib/types/interfaces/responses";
+import {AdminDashboardData, CustomerDashboardData, StaffDashboardData} from "@/lib/types/interfaces/dashboards";
 
 export interface LoginCredentials {
     email: string;
@@ -34,6 +35,7 @@ export interface StaffRegistrationData extends BaseRegistrationData {
 export interface AuthState {
     firebaseUser: FirebaseUser | null;    // Firebase authentication state
     user: UserResponse  | null;             // Backend user data
+    dashboardData: AdminDashboardData | StaffDashboardData | CustomerDashboardData | null; // Dashboard data
     status: 'idle' | 'authenticating' | 'authenticated' | 'error';
     initialized: boolean;                  // Whether auth system has completed initial load
 }
@@ -43,6 +45,7 @@ export interface AuthActions {
     register: (credentials: RegistrationData) => Promise<void>;
     logout: () => Promise<void>;
     refreshUser: () => Promise<void>;
+    fetchDashboard: () => Promise<DashboardResponse | null>;
 }
 
 export interface AuthContextType extends AuthState, AuthActions {}
