@@ -8,7 +8,7 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 
 from apps.services.models import ServiceCategory, Service, DetailedService
-from config import settings
+from django.conf import settings
 
 
 class Command(BaseCommand):

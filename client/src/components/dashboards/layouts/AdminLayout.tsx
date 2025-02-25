@@ -30,23 +30,24 @@ import {AuthService} from "@/hooks/auth.ts"
 import {useAuth} from "@/contexts/AuthContext.tsx";
 import {AdminLayoutProps} from "@/lib/types/interfaces/dashboards.ts";
 
-const AdminLayout = ({children, activeTab, onTabChange}: AdminLayoutProps) => {
-    const {logout} = useAuth();
+const AdminLayout = ({children, activeTab, onTabChange, isLoading: propIsLoading = false}: AdminLayoutProps) => {
+    const {fetchDashboard, logout, status} = useAuth();
     const navigate = useNavigate();
     const [collapsed, setCollapsed] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
-    const [showConfirmDialog, setShowConfirmDialog] = useState(false)
+    const [isRedirecting, setIsRedirecting] = useState(false);
+    const [showConfirmDialog, setShowConfirmDialog] = useState(false);
     const {toast} = useToast();
+    const isLoading = propIsLoading || status === 'authenticating' || isRedirecting;
 
     const handleDjangoAdminRedirect = async () => {
-        setIsLoading(true)
+        setIsRedirecting(true);
         try {
             await AuthService.redirectToDjangoAdmin()
         } catch (error) {
             console.error('Failed to redirect to Django admin:', error)
         } finally {
-            setIsLoading(false)
-            setShowConfirmDialog(false)
+            setIsRedirecting(false);
+            setShowConfirmDialog(false);
         }
     }
 
@@ -62,8 +63,23 @@ const AdminLayout = ({children, activeTab, onTabChange}: AdminLayoutProps) => {
             console.error('Logout failed:', error);
             toast({
                 title: "Logout Failed",
-                description: "An error occurred while logging out: ${error.message} ",
+                description: `An error occurred while logging out: ${error instanceof Error ? error.message : 'Unknown error'}`,
                 action: <ToastAction altText="Try again">Try again</ToastAction>,
+                variant: "destructive"
+            });
+        }
+    };
+
+    const handleNavItemClick = async (tabId: string) => {
+        onTabChange(tabId);
+        try {
+            await fetchDashboard();
+        } catch (error) {
+            console.error('Failed to refresh dashboard data:', error);
+            toast({
+                title: "Data Refresh Failed",
+                description: "Unable to refresh dashboard data. Some information may be outdated.",
+                variant: "destructive"
             });
         }
     };
@@ -105,12 +121,13 @@ const AdminLayout = ({children, activeTab, onTabChange}: AdminLayoutProps) => {
                     {navItems.map((item) => (
                         <button
                             key={item.id}
-                            onClick={() => onTabChange(item.id)}
+                            onClick={() => handleNavItemClick(item.id)}
+                            disabled={isLoading}
                             className={`w-full flex items-center px-4 py-3 transition-colors ${
                                 activeTab === item.id
                                     ? 'bg-[#003366]'
                                     : 'hover:bg-[#003366]'
-                            }`}>
+                            }${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}>
                             <span className="mr-3">{item.icon}</span>
                             {!collapsed && <span>{item.title}</span>}
                         </button>

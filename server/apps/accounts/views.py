@@ -10,8 +10,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from utils.firebase_conn import firebase_conn
-from .models import StaffProfile
-from .permissions import IsAdminUser
+from .permissions import IsAdminUser, IsAdminStaffOrCustomer
 from .serializers import (
     RegisterSerializer, CustomerProfileSerializer, StaffProfileSerializer, PasswordChangeSerializer,
     UserSerializer, UserUpdateSerializer, AdminDashboardSerializer, UserMinimalSerializer,
@@ -157,7 +156,7 @@ class UserViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-    @action(detail=False, methods=['GET'])
+    @action(detail=False, methods=['GET'], permission_classes=[IsAdminStaffOrCustomer])
     def dashboard(self, request):
         user = request.user
         logger.info(f"\n=== Processing dashboard request for {user.id} ===")

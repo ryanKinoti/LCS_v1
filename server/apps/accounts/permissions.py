@@ -15,3 +15,9 @@ class IsStaffUser(BasePermission):
 class IsCustomerUser(BasePermission):
     def has_permission(self, request, view):
         return bool(request.user and hasattr(request.user, 'customer_profile'))
+
+
+class IsAdminStaffOrCustomer(BasePermission):
+    def has_permission(self, request, view):
+        user = request.user
+        return bool(user and (user.is_superuser or user.is_staff or hasattr(user, 'customer_profile')))
